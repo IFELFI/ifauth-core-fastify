@@ -1,5 +1,5 @@
 import { FastifyTypebox } from "..";
-import authLocal from "./auth.local.route";
+import authLocal from "./localAuth.route";
 
 export function registerRoutes(fastify: FastifyTypebox) {
   authLocal(fastify);
