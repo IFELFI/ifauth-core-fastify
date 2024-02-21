@@ -1,10 +1,12 @@
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import fastify, { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault } from "fastify";
+import { registerRoutes } from "./routes";
 // Import plugins
 import env from "@fastify/env"
+import prismaPlugin from "./plugins/prisma.plugin";
+import redis from "@fastify/redis"
 // Import schema
 import envSchema from "./schema/env.schema";
-import { registerRoutes } from "./routes";
 
 export type FastifyTypebox = FastifyInstance<
   RawServerDefault,
@@ -29,9 +31,18 @@ async function start() {
     })
       .withTypeProvider<TypeBoxTypeProvider>();
 
+    // Load environment variables
     await server.register(env, {
       confKey: "config",
       schema: envSchema,
+    });
+    const { config } = server;
+
+    // Register plugins
+    await server.register(prismaPlugin);
+    await server.register(redis, {
+      host: config.REDIS_HOST,
+      port: config.REDIS_PORT,
     })
 
     registerRoutes(server);
