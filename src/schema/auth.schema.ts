@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-export const signupSchema = {
+export const localSignupSchema = {
   body: Type.Object({
     nickname: Type.String({ minLength: 3, maxLength: 20 }),
     email: Type.String({ format: "email" }),
@@ -9,7 +9,7 @@ export const signupSchema = {
   }),
 }
 
-export const loginSchema = {
+export const localLoginSchema = {
   body: Type.Object({
     email: Type.String({ format: "email" }),
     password: Type.String({ minLength: 8 }),

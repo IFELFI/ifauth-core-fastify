@@ -1,0 +1,70 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "member", "public"]
+}
+
+model password {
+  password_id Int       @id(map: "pk_password") @default(autoincrement())
+  user_id     Int       @unique(map: "uni_user_password")
+  password    String    @db.VarChar(256)
+  update_date DateTime? @db.Timestamptz(6)
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user")
+
+  @@schema("auth")
+}
+
+model provider {
+  provider_id Int           @id(map: "pk_provider") @default(autoincrement())
+  user_id     Int           @unique(map: "uni_user_provider")
+  provider    provider_type
+  users       users         @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user")
+  social_info social_info?
+
+  @@schema("auth")
+}
+
+model social_info {
+  social_info_id Int      @id(map: "pk_social_info") @default(autoincrement())
+  provider_id    Int      @unique(map: "uni_provider_social_info")
+  social_code    String   @db.VarChar(128)
+  access_token   String   @db.VarChar(256)
+  provider       provider @relation(fields: [provider_id], references: [provider_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_provider")
+
+  @@schema("auth")
+}
+
+model profile {
+  profile_id  Int       @id(map: "pk_profile") @default(autoincrement())
+  user_id     Int       @unique(map: "uni_user_profile")
+  nickname    String?   @unique(map: "uni_nickname") @db.VarChar(64)
+  image_url   String?   @db.VarChar(128)
+  join_date   DateTime  @default(now()) @db.Timestamptz(6)
+  update_date DateTime? @db.Timestamptz(6)
+  users       users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user")
+
+  @@schema("member")
+}
+
+model users {
+  user_id  Int       @id(map: "pk_user") @default(autoincrement())
+  uuid_key String    @unique(map: "uni_uuid_key") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email    String    @unique(map: "uni_email") @db.VarChar(64)
+  password password?
+  provider provider?
+  profile  profile?
+
+  @@schema("member")
+}
+
+enum provider_type {
+  local
+  google
+
+  @@schema("public")
+}
