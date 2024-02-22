@@ -1,8 +1,6 @@
-import { FastifyRedis } from "@fastify/redis";
-import { PrismaClient } from "@prisma/client";
-import { FastifyTypebox } from "..";
+import { localLoginSchema, localSignupSchema } from './../schema/auth.schema';
+import { FastifyReplyTypebox, FastifyRequestTypebox, FastifyTypebox } from "..";
 import { LocalAuthService } from "../services/localAuth.service";
-import { FastifyReply, FastifyRequest } from "fastify";
 
 export class LocalAuthController {
   #localAuthService: LocalAuthService;
@@ -11,7 +9,12 @@ export class LocalAuthController {
     this.#localAuthService = new LocalAuthService(fastify);
   }
 
-  async signup(request: FastifyRequest, reply: FastifyReply) {
-    return this.#localAuthService.signup();
+  public async signup(request: FastifyRequestTypebox<typeof localSignupSchema>, reply: FastifyReplyTypebox<typeof localSignupSchema>) {
+    const data = request.body;
+    const result = await this.#localAuthService.signup(data);
+  }
+
+  public async login(request: FastifyRequestTypebox<typeof localLoginSchema>, reply: FastifyReplyTypebox<typeof localLoginSchema>) {
+    const data = request.body;
   }
 }
