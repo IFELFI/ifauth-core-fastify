@@ -1,5 +1,5 @@
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import fastify, { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault } from "fastify";
+import fastify, { ContextConfigDefault, FastifyBaseLogger, FastifyInstance, FastifyReply, FastifyRequest, FastifySchema, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault, RouteGenericInterface } from "fastify";
 import { registerRoutes } from "./routes";
 // Import plugins
 import env from "@fastify/env"
@@ -15,6 +15,25 @@ export type FastifyTypebox = FastifyInstance<
   FastifyBaseLogger,
   TypeBoxTypeProvider
 >;
+
+export type FastifyRequestTypebox<TSchema extends FastifySchema> = FastifyRequest<
+  RouteGenericInterface,
+  RawServerDefault,
+  RawRequestDefaultExpression<RawServerDefault>,
+  TSchema,
+  TypeBoxTypeProvider
+>;
+
+export type FastifyReplyTypebox<TSchema extends FastifySchema> = FastifyReply<
+  RawServerDefault,
+  RawRequestDefaultExpression,
+  RawReplyDefaultExpression,
+  RouteGenericInterface,
+  ContextConfigDefault,
+  TSchema,
+  TypeBoxTypeProvider
+>
+
 
 async function start() {
   try {
