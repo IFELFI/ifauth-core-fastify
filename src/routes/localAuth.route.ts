@@ -8,7 +8,7 @@ export default async function (fastify: FastifyTypebox) {
 
   fastify.post('/auth/signup/local', {
     schema: localSignupSchema,
-  }, (req, res) => {
-
+  }, (request, reply) => {
+    
   });
 }
