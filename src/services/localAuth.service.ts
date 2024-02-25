@@ -1,36 +1,43 @@
-import { PrismaClient, provider_type, users } from "@prisma/client";
-import { FastifyRedis } from "@fastify/redis";
+import { provider_type, users } from "@prisma/client";
 import { FastifyTypebox } from "..";
 import { localLoginSchema, localSignupSchema } from "../schema/auth.schema";
 import { Static } from "@sinclair/typebox";
-import { HttpErrors } from "@fastify/sensible";
-import { FastifyService } from ".";
+import { AccessTokenPayload, TokenPair } from "../interfaces/token.interface";
 
-export class LocalAuthService extends FastifyService {
-  #prisma: PrismaClient;
-  #redis: FastifyRedis;
-  #httpErrors: HttpErrors;
+export class LocalAuthService {
+  #fastify: FastifyTypebox;
 
   constructor(fastify: FastifyTypebox) {
-    super(fastify);
-    this.#prisma = fastify.prisma;
-    this.#redis = fastify.redis;
-    this.#httpErrors = fastify.httpErrors;
+    this.#fastify = fastify;
   }
 
-  public async signup(signupData: Static<typeof localSignupSchema.body>): Promise<users>{
-    return await this.#prisma.$transaction(async (tx) => {
+  public async signup(signupData: Static<typeof localSignupSchema.body>): Promise<TokenPair> {
+    return await this.#fastify.prisma.$transaction(async (tx) => {
       const searchUser = await tx.users.findUnique({ where: { email: signupData.email } });
       if (searchUser) {
-        throw this.#httpErrors.conflict("Email already exists");
+        throw this.#fastify.httpErrors.conflict("Email already exists");
       }
       try {
+        const savedNickname = signupData.nickname || signupData.email.split('@')[0];
         const createUser = await tx.users.create({ data: { email: signupData.email }});
-        await tx.password.create({ data: { users: { connect: { id: createUser.id }}, password: signupData.password}})
-        await tx.provider.create({ data: { users: { connect: { id: createUser.id }}, provider: provider_type.local}});
-        return createUser;
+        await tx.profile.create({ data: { users: { connect: { id: createUser.id }}, nickname: savedNickname, image_url: signupData.imageUrl || null }});
+        await tx.password.create({ data: { users: { connect: { id: createUser.id } }, password: signupData.password } })
+        await tx.provider.create({ data: { users: { connect: { id: createUser.id } }, provider: provider_type.local } });
+
+        const AccessTokenPayload: AccessTokenPayload = {
+          uuidKey: createUser.uuid_key,
+          email: createUser.email,
+          nickname: savedNickname,
+          imageUrl: signupData.imageUrl || null,
+        }
+
+        const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, { expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION })
+        const refreshToken = this.#fastify.jwt.sign({}, { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION })
+
+        return { accessToken, refreshToken };
+
       } catch (error) {
-        throw this.#httpErrors.internalServerError("Error creating user");
+        throw this.#fastify.httpErrors.internalServerError("Error creating user");
       }
     })
   }

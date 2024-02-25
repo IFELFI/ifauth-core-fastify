@@ -7,6 +7,7 @@ import prismaPlugin from "./plugins/prisma.plugin";
 import redis from "@fastify/redis"
 import sensible from "@fastify/sensible"
 import loadServicesPlugin from "./plugins/loadServices.plugin";
+import jwt from "@fastify/jwt";
 // Import schema
 import envSchema from "./schema/env.schema";
 
@@ -86,6 +87,19 @@ async function start() {
     })
     await server.register(sensible);
     await server.register(loadServicesPlugin);
+    await server.register(jwt, {
+      secret: config.TOKEN_SECRET,
+      cookie: {
+        cookieName: "refresh",
+        signed: false,
+      },
+      sign: {
+        iss: "ifelfi.com",
+      },
+      verify: {
+        allowedIss: "ifelfi.com",
+      }
+    })
 
     // Register routes
     registerRoutes(server);
