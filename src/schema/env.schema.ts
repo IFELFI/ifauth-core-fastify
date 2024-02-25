@@ -10,8 +10,8 @@ declare module 'fastify' {
 const schema = Type.Object({
   // Add your environment variables here
   PORT: Type.Integer({ minimum: 0, maximum: 65535, default: 3000 }),
-  DATABASE_URL: Type.String({ format: "uri" }),
-  REDIS_HOST: Type.String({ format: "hostname", default: "localhost" }),
+  DATABASE_URL: Type.String(),
+  REDIS_HOST: Type.String({ default: "localhost" }),
   REDIS_PORT: Type.Integer({ minimum: 0, maximum: 65535, default: 6379 }),
 })
 

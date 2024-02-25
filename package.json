@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "@fastify/env": "^4.3.0",
-    "@fastify/error": "^3.4.1",
     "@fastify/redis": "^6.1.1",
+    "@fastify/sensible": "^5.5.0",
     "@fastify/type-provider-typebox": "^4.0.0",
-    "@prisma/client": "^5.10.1",
+    "@prisma/client": "^5.10.2",
     "@sinclair/typebox": "^0.32.14",
     "fastify": "^4.26.1"
   },
@@ -13,7 +13,7 @@
   "main": "index.js",
   "devDependencies": {
     "@types/node": "^20.11.19",
-    "prisma": "^5.10.1",
+    "prisma": "^5.10.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
   },

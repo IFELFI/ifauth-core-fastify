@@ -5,9 +5,12 @@ import { registerRoutes } from "./routes";
 import env from "@fastify/env"
 import prismaPlugin from "./plugins/prisma.plugin";
 import redis from "@fastify/redis"
+import sensible from "@fastify/sensible"
+import loadServicesPlugin from "./plugins/loadServices.plugin";
 // Import schema
 import envSchema from "./schema/env.schema";
 
+// Define types
 export type FastifyTypebox = FastifyInstance<
   RawServerDefault,
   RawRequestDefaultExpression<RawServerDefault>,
@@ -37,6 +40,7 @@ export type FastifyReplyTypebox<TSchema extends FastifySchema> = FastifyReply<
 
 async function start() {
   try {
+    // Create server
     const server = fastify({
       ajv: {
         customOptions: {
@@ -46,7 +50,24 @@ async function start() {
           allErrors: true,
         }
       },
-      logger: true
+      logger: {
+        level: "info",
+        file: __dirname + "/../logs/logs.log",
+        redact: ["req.headers.authorization"],
+        serializers: {
+          req(req) {
+            return {
+              method: req.method,
+              url: req.url,
+              headers: req.headers,
+              body: req.body,
+              remoteAddress: req.ip,
+              hostname: req.hostname,
+              remotePort: req.connection.remotePort,
+            }
+          }
+        }
+      }
     })
       .withTypeProvider<TypeBoxTypeProvider>();
 
@@ -63,11 +84,16 @@ async function start() {
       host: config.REDIS_HOST,
       port: config.REDIS_PORT,
     })
+    await server.register(sensible);
+    await server.register(loadServicesPlugin);
 
+    // Register routes
     registerRoutes(server);
 
+    // Start server
     const port = server.config.PORT
     await server.listen({ port: port })
+    console.log(`Server listening on port ${port}`)
   } catch (error) {
     throw error
   }
