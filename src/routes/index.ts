@@ -1,5 +1,7 @@
 import { FastifyTypebox } from "..";
 import authLocal from "./localAuth.route";
+import tokenRoute from "./token.route";
+import userRoute from "./user.route";
 
 export function registerRoutes(fastify: FastifyTypebox) {
 
@@ -8,4 +10,6 @@ export function registerRoutes(fastify: FastifyTypebox) {
   });
 
   authLocal(fastify);
+  tokenRoute(fastify);
+  userRoute(fastify);
 }

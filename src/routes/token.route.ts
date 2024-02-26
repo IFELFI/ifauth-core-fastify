@@ -1,6 +1,4 @@
-import { TokenError } from "fast-jwt";
 import { FastifyTypebox } from "..";
-import { AccessTokenPayload } from "../interfaces/token.interface";
 import { ReplyData } from "../interfaces/reply.interface";
 
 export default async function (fastify: FastifyTypebox) {
@@ -8,26 +6,20 @@ export default async function (fastify: FastifyTypebox) {
   const basePath = '/token';
 
   fastify.post(`${basePath}/validate`, async (request, reply) => {
-    return request.jwtVerify<AccessTokenPayload>()
-    .then((decoded) => {
-      const access = fastify.jwt.sign(decoded);
-      const refresh = fastify.jwt.sign(decoded, { expiresIn: fastify.config.REFRESH_TOKEN_EXPIRATION});
-      const replyData: ReplyData = {
-        success: true,
-        message: 'Token is valid',
-        data: {
-          accessToken: access,
-          refreshToken: refresh,
-        }
-      }
-      return reply.status(200).send(replyData);
-    })
-    .catch(async (err) => {
-      request.jwtVerify<{}>({ onlyCookie: true })
-      const decoded = await request.jwtDecode<AccessTokenPayload>();
-      
-      // add logic
-    })
-  });
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    const refreshToken = request.cookies.refresh ?? '';
+    if (accessToken === undefined) throw fastify.httpErrors.unauthorized("Token is invalid");
+    
+    const result = await fastify.services.tokenService.validateAndRefresh({ accessToken, refreshToken });
 
+    const replyData: ReplyData = {
+      success: true,
+      message: 'Token is valid and refreshed',
+    }
+
+    reply.code(200)
+      .setCookie('refresh', result.refreshToken)
+      .header('Authorization', `Bearer ${result.accessToken}`)
+      .send(replyData);
+  });
 }
