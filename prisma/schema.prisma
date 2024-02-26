@@ -1,0 +1,71 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "member", "public"]
+}
+
+model password {
+  id          Int      @id(map: "pk_password") @default(autoincrement())
+  user_id     Int      @unique(map: "uni_password")
+  password    String   @db.VarChar(256)
+  update_date DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user")
+
+  @@schema("auth")
+}
+
+model provider {
+  id          Int           @id(map: "pk_provider") @default(autoincrement())
+  user_id     Int           @unique(map: "uni_provider")
+  provider    provider_type @default(local)
+  users       users         @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user")
+  social_info social_info?
+
+  @@schema("auth")
+}
+
+model social_info {
+  id           Int      @id(map: "pk_social_info") @default(autoincrement())
+  provider_id  Int      @unique(map: "uni_social_info")
+  social_code  String   @db.VarChar(128)
+  access_token String?  @db.VarChar(256)
+  provider     provider @relation(fields: [provider_id], references: [id], onDelete: Cascade, map: "fk_provider")
+
+  @@schema("auth")
+}
+
+model profile {
+  id          Int      @id(map: "pk_profile") @default(autoincrement())
+  user_id     Int      @unique(map: "uni_profile")
+  nickname    String   @unique(map: "uni_nickname") @db.VarChar(32)
+  image_url   String?  @db.VarChar(256)
+  join_date   DateTime @default(now()) @db.Timestamptz(6)
+  update_date DateTime @default(now()) @db.Timestamptz(6)
+  users       users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user")
+
+  @@schema("member")
+}
+
+model users {
+  id       Int       @id(map: "pk_users") @default(autoincrement())
+  uuid_key String    @unique(map: "uni_uuid_key") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email    String    @unique(map: "uni_email") @db.VarChar(256)
+  password password?
+  provider provider?
+  profile  profile?
+
+  @@schema("member")
+}
+
+enum provider_type {
+  local
+  google
+
+  @@schema("public")
+}
