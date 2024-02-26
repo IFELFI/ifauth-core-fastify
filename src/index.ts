@@ -1,3 +1,4 @@
+import { FastifyCookieOptions } from './../node_modules/@fastify/cookie/types/plugin.d';
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import fastify, { ContextConfigDefault, FastifyBaseLogger, FastifyInstance, FastifyReply, FastifyRequest, FastifySchema, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault, RouteGenericInterface } from "fastify";
 import { registerRoutes } from "./routes";
@@ -8,6 +9,7 @@ import redis from "@fastify/redis"
 import sensible from "@fastify/sensible"
 import loadServicesPlugin from "./plugins/loadServices.plugin";
 import jwt from "@fastify/jwt";
+import cookie from "@fastify/cookie";
 // Import schema
 import envSchema from "./schema/env.schema";
 
@@ -87,12 +89,18 @@ async function start() {
     })
     await server.register(sensible);
     await server.register(loadServicesPlugin);
+    await server.register(cookie, {
+      secret: config.COOKIE_SECRET,
+      parseOptions: {
+        samesite: "none",
+        path: "/",
+        secure: true,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
+    } as FastifyCookieOptions);
     await server.register(jwt, {
       secret: config.TOKEN_SECRET,
-      cookie: {
-        cookieName: "refresh",
-        signed: false,
-      },
       sign: {
         iss: "ifelfi.com",
       },

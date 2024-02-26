@@ -1,6 +1,6 @@
 import { FastifyTypebox } from "..";
-import { TokenReplyData } from "../interfaces/reply.interface";
-import { localSignupSchema } from "../schema/auth.schema";
+import { ReplyData } from "../interfaces/reply.interface";
+import { localLoginSchema, localSignupSchema } from "../schema/auth.schema";
 
 export default async function (fastify: FastifyTypebox) {
 
@@ -10,17 +10,27 @@ export default async function (fastify: FastifyTypebox) {
     schema: localSignupSchema,
   }, async (request, reply) => {
     const result = await fastify.services.localAuthService.signup(request.body);
-    const ReplyData: TokenReplyData = {
+    const replyData: ReplyData = {
       success: true,
       message: 'User created',
-      data: {
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-      }
     }
-    reply.status(201).send(ReplyData);
+    reply.code(201)
+      .setCookie('refresh', result.refreshToken)
+      .header('Authorization', `Bearer ${result.accessToken}`)
+      .send(replyData)
   });
 
-  fastify.post(`${basePath}/login`, async (request, reply) => {
+  fastify.post(`${basePath}/login`, {
+    schema: localLoginSchema,
+  }, async (request, reply) => {
+    const result = await fastify.services.localAuthService.login(request.body);
+    const replyData: ReplyData= {
+      success: true,
+      message: 'User logged in',
+    }
+    reply.code(200)
+      .setCookie('refresh', result.refreshToken)
+      .header('Authorization', `Bearer ${result.accessToken}`)
+      .send(replyData);
   });
 }
