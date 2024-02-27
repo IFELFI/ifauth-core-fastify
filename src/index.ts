@@ -2,6 +2,7 @@ import { FastifyCookieOptions } from './../node_modules/@fastify/cookie/types/pl
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import fastify, { ContextConfigDefault, FastifyBaseLogger, FastifyInstance, FastifyReply, FastifyRequest, FastifySchema, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault, RouteGenericInterface } from "fastify";
 import { registerRoutes } from "./routes";
+import fs from "fs";
 // Import plugins
 import env from "@fastify/env"
 import prismaPlugin from "./plugins/prisma.plugin";
@@ -10,8 +11,12 @@ import sensible from "@fastify/sensible"
 import loadServicesPlugin from "./plugins/loadServices.plugin";
 import jwt from "@fastify/jwt";
 import cookie from "@fastify/cookie";
+import helmet from "@fastify/helmet"
+import cors from "@fastify/cors"
+import csrf from "@fastify/csrf-protection";
 // Import schema
 import envSchema from "./schema/env.schema";
+import { log } from 'console';
 
 // Define types
 export type FastifyTypebox = FastifyInstance<
@@ -44,6 +49,7 @@ export type FastifyReplyTypebox<TSchema extends FastifySchema> = FastifyReply<
 async function start() {
   try {
     // Create server
+    fs.mkdirSync(__dirname + "/../logs", { recursive: true });
     const server = fastify({
       ajv: {
         customOptions: {
@@ -97,6 +103,7 @@ async function start() {
         secure: true,
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7,
+        signed: true,
       },
     } as FastifyCookieOptions);
     await server.register(jwt, {
@@ -107,7 +114,9 @@ async function start() {
       verify: {
         allowedIss: "ifelfi.com",
       }
-    })
+    });
+    await server.register(helmet, { global: true });
+    await server.register(cors, { origin: ['http://localhost:5173'], credentials: true, methods: ["GET", "POST", "PUT", "DELETE"], allowedHeaders: ["Content-Type", "Authorization"] })
 
     // Register routes
     registerRoutes(server);
