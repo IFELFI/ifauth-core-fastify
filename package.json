@@ -9,6 +9,7 @@
     "@fastify/redis": "^6.1.1",
     "@fastify/sensible": "^5.5.0",
     "@fastify/type-provider-typebox": "^4.0.0",
+    "@fastify/under-pressure": "^8.3.0",
     "@prisma/client": "^5.10.2",
     "@sinclair/typebox": "^0.32.14",
     "bcrypt": "^5.1.1",
