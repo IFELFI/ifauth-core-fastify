@@ -8,11 +8,11 @@ services:
     image: ifauth-api:0.1
     container_name: ifauth_api
     volumes:
-      - ./logs:/app/logs
+      - ../logs:/app/logs
     ports:
       - '3000:3000'
     env_file:
-      - ./.env
+      - ../.env.ifauth
     restart: always
     networks:
       - ifelfi-network
