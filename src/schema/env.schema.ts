@@ -9,6 +9,7 @@ declare module 'fastify' {
 
 const schema = Type.Object({
   // Add your environment variables here
+  HOST: Type.String({ default: "localhost" }),
   PORT: Type.Integer({ minimum: 0, maximum: 65535, default: 3000 }),
   TOKEN_SECRET: Type.String(),
   COOKIE_SECRET: Type.String(),
