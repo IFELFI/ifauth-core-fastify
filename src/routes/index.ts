@@ -5,7 +5,7 @@ import userRoute from "./user.route";
 
 export function registerRoutes(fastify: FastifyTypebox) {
 
-  fastify.get('/health', async (request, reply) => {
+  fastify.get(fastify.config.API_URI + '/health', async (request, reply) => {
     return { status: 'ok' }
   });
 
