@@ -1,12 +1,12 @@
 version: '3'
 
 services:
-  ifauth-api:
+  ifauth:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ifauth-api:0.1
-    container_name: ifauth_api
+    image: ifauth:0.1
+    container_name: ifauth
     volumes:
       - ../logs/ifauth:/app/logs
     ports:
