@@ -5,14 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ifauth-api
     container_name: ifauth_api
+    volumes:
+      - ./logs:/app/logs
     ports:
       - '3000:3000'
     env_file:
       - ./.env
-    depends_on:
-      - redis
-      - postgresql
     restart: always
     networks:
       - ifelfi-network
