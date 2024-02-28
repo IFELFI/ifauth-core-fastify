@@ -17,6 +17,7 @@ const schema = Type.Object({
   DATABASE_URL: Type.String(),
   REDIS_HOST: Type.String({ default: "localhost" }),
   REDIS_PORT: Type.Integer({ minimum: 0, maximum: 65535, default: 6379 }),
+  API_URI: Type.String({ default: "/ifauth" }),
 })
 
 type T = Static<typeof schema>
