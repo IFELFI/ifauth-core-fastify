@@ -5,8 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ifauth-api
+    image: ifauth-api:0.1
     container_name: ifauth_api
+    depends_on:
+      - redis
+      - postgresql
     volumes:
       - ./logs:/app/logs
     ports:
