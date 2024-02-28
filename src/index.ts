@@ -129,8 +129,9 @@ async function start() {
     registerRoutes(server);
 
     // Start server
-    const port = server.config.PORT
-    await server.listen({ port: port })
+    const host = server.config.HOST;
+    const port = server.config.PORT;
+    await server.listen({ host: host, port: port })
     console.log(`Server listening on port ${port}`)
   } catch (error) {
     throw error
