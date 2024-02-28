@@ -13,10 +13,9 @@ import jwt from "@fastify/jwt";
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet"
 import cors from "@fastify/cors"
-import csrf from "@fastify/csrf-protection";
+import underPressure from "@fastify/under-pressure"
 // Import schema
 import envSchema from "./schema/env.schema";
-import { log } from 'console';
 
 // Define types
 export type FastifyTypebox = FastifyInstance<
@@ -46,9 +45,9 @@ export type FastifyReplyTypebox<TSchema extends FastifySchema> = FastifyReply<
 >
 
 
+// Create server
 async function start() {
   try {
-    // Create server
     fs.mkdirSync(__dirname + "/../logs", { recursive: true });
     const server = fastify({
       ajv: {
@@ -117,6 +116,14 @@ async function start() {
     });
     await server.register(helmet, { global: true });
     await server.register(cors, { origin: ['http://localhost:5173'], credentials: true, methods: ["GET", "POST", "PUT", "DELETE"], allowedHeaders: ["Content-Type", "Authorization"] })
+    await server.register(underPressure, {
+      maxEventLoopDelay: 1000,
+      retryAfter: 50,
+      maxHeapUsedBytes: 100000000,
+      maxRssBytes: 100000000,
+      maxEventLoopUtilization: 0.98
+    });
+
 
     // Register routes
     registerRoutes(server);
@@ -130,4 +137,4 @@ async function start() {
   }
 }
 
-start()
+start();

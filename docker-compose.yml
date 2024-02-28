@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  ifauth-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ifauth-api:0.1
+    container_name: ifauth_api
+    depends_on:
+      - redis
+      - postgresql
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - '3000:3000'
+    env_file:
+      - ./.env
+    restart: always
+    networks:
+      - ifelfi-network
+
+networks:
+  ifelfi-network:
+    external: true
