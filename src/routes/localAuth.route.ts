@@ -4,7 +4,7 @@ import { localLoginSchema, localSignupSchema } from "../schema/auth.schema";
 
 export default async function (fastify: FastifyTypebox) {
 
-  const basePath = '/auth/local';
+  const basePath = fastify.config.API_URI + '/auth/local';
 
   fastify.post(`${basePath}/signup`, {
     schema: localSignupSchema,
