@@ -4,7 +4,7 @@ import { ReplyData } from "../interfaces/reply.interface";
 
 export default async function (fastify: FastifyInstance) {
 
-  const basePath = fastify.config.API_URI + '/user';
+  const basePath = '/user';
 
   fastify.post(`${basePath}/logout`, async (request, reply) => {
     const accessToken = request.headers.authorization?.split(' ')[1] ?? '';
