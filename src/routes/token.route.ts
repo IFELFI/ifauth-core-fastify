@@ -3,7 +3,7 @@ import { ReplyData } from "../interfaces/reply.interface";
 
 export default async function (fastify: FastifyTypebox) {
 
-  const basePath = fastify.config.API_URI + '/token';
+  const basePath = '/token';
 
   fastify.post(`${basePath}/validate`, async (request, reply) => {
     const accessToken = request.headers.authorization?.split(' ')[1];
