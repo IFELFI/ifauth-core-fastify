@@ -1,6 +1,7 @@
 # Ignore additional files and folders
 /logs
 /node_modules
+/dist
 
 # Ignore docker files
 /Dockerfile
