@@ -1,2 +1,14 @@
+# Ignore additional files and folders
 /logs
 /node_modules
+
+# Ignore docker files
+/Dockerfile
+/.dockerignore
+
+# Ignore git files
+/.git
+/.gitignore
+
+# Ignore environment files
+/.env
