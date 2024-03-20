@@ -1,5 +1,5 @@
 import { FastifyTypebox } from "..";
-import authLocal from "./localAuth.route";
+import authLocal from "./auth/local";
 import tokenRoute from "./token.route";
 import userRoute from "./user.route";
 

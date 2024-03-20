@@ -1,11 +1,11 @@
 import { provider_type, users } from "@prisma/client";
-import { FastifyTypebox } from "..";
-import { localLoginSchema, localSignupSchema } from "../schema/auth.schema";
+import { FastifyTypebox } from "../..";
+import { localLoginSchema, localSignupSchema } from "../../schema/auth.schema";
 import { Static } from "@sinclair/typebox";
-import { AccessTokenPayload, TokenPair } from "../interfaces/token.interface";
+import { AccessTokenPayload, TokenPair } from "../../interfaces/token.interface";
 import bcrypt from "bcrypt";
 
-export class LocalAuthService {
+export class AuthLocalService {
   #fastify: FastifyTypebox;
 
   constructor(fastify: FastifyTypebox) {
@@ -26,9 +26,9 @@ export class LocalAuthService {
       try {
         const nickname = signupData.nickname || signupData.email.split('@')[0];
         const hashedPassword = await bcrypt.hash(signupData.password, 10);
-        const createUser = await tx.users.create({ data: { email: signupData.email }});
-        await tx.profile.create({ data: { users: { connect: { id: createUser.id }}, nickname: nickname, image_url: signupData.imageUrl || null }});
-        await tx.password.create({ data: { users: { connect: { id: createUser.id } }, password: hashedPassword} })
+        const createUser = await tx.users.create({ data: { email: signupData.email } });
+        await tx.profile.create({ data: { users: { connect: { id: createUser.id } }, nickname: nickname, image_url: signupData.imageUrl || null } });
+        await tx.password.create({ data: { users: { connect: { id: createUser.id } }, password: hashedPassword } })
         await tx.provider.create({ data: { users: { connect: { id: createUser.id } }, provider: provider_type.local } });
 
         const AccessTokenPayload: AccessTokenPayload = {
