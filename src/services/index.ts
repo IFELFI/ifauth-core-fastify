@@ -1,11 +1,11 @@
 import { UserService } from './user.service';
 import { TokenService } from './token.service';
 import { FastifyInstance } from "fastify";
-import { LocalAuthService } from "./localAuth.service";
+import { AuthLocalService } from "./auth/local";
 
 const services = (fastify: FastifyInstance) => {
   return {
-    localAuthService: new LocalAuthService(fastify),
+    authLocalService: new AuthLocalService(fastify),
     tokenService: new TokenService(fastify),
     userService: new UserService(fastify)
   }

@@ -1,6 +1,6 @@
-import { FastifyTypebox } from "..";
-import { ReplyData } from "../interfaces/reply.interface";
-import { localLoginSchema, localSignupSchema } from "../schema/auth.schema";
+import { FastifyTypebox } from "../..";
+import { ReplyData } from "../../interfaces/reply.interface";
+import { localLoginSchema, localSignupSchema } from "../../schema/auth.schema";
 
 export default async function (fastify: FastifyTypebox) {
 
@@ -9,7 +9,7 @@ export default async function (fastify: FastifyTypebox) {
   fastify.post(`${basePath}/signup`, {
     schema: localSignupSchema,
   }, async (request, reply) => {
-    const result = await fastify.services.localAuthService.signup(request.body);
+    const result = await fastify.services.authLocalService.signup(request.body);
     const replyData: ReplyData = {
       success: true,
       message: 'User created',
@@ -23,8 +23,8 @@ export default async function (fastify: FastifyTypebox) {
   fastify.post(`${basePath}/login`, {
     schema: localLoginSchema,
   }, async (request, reply) => {
-    const result = await fastify.services.localAuthService.login(request.body);
-    const replyData: ReplyData= {
+    const result = await fastify.services.authLocalService.login(request.body);
+    const replyData: ReplyData = {
       success: true,
       message: 'User logged in',
     }
