@@ -21,7 +21,7 @@ export class TokenService {
       const payload = this.#fastify.jwt.verify<AccessTokenPayload>(accessToken);
     } catch (error) {}
     try {
-      const payload = await this.#fastify.jwt.decode<AccessTokenPayload>(accessToken);
+      const payload = this.#fastify.jwt.decode<AccessTokenPayload>(accessToken);
       if (payload === null) throw new Error('Access token is invalid');
       const savedRefreshToken = await this.#fastify.redis.get(payload.uuidKey);
       if (savedRefreshToken === null) throw new Error('Refresh token is invalid');

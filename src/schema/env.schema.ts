@@ -16,9 +16,7 @@ const schema = Type.Object({
   ACCESS_TOKEN_EXPIRATION: Type.String({ default: "5m" }), 
   REFRESH_TOKEN_EXPIRATION: Type.String({ default: "1d" }),
   DATABASE_URL: Type.String(),
-  REDIS_HOST: Type.String({ default: "localhost" }),
-  REDIS_PORT: Type.Integer({ minimum: 0, maximum: 65535, default: 6379 }),
-  API_URI: Type.String({ default: "/ifauth-core" }),
+  REDIS_URL: Type.String({default: "redis://localhost:6379"}),
 })
 
 type T = Static<typeof schema>

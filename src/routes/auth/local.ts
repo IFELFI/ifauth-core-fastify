@@ -1,4 +1,4 @@
-import { FastifyTypebox } from "../..";
+import { FastifyTypebox } from "../../app";
 import { ReplyData } from "../../interfaces/reply.interface";
 import { localLoginSchema, localSignupSchema } from "../../schema/auth.schema";
 
