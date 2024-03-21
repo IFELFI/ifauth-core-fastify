@@ -2,7 +2,6 @@ import { FastifyCookieOptions } from '@fastify/cookie';
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import fastify, { ContextConfigDefault, FastifyBaseLogger, FastifyInstance, FastifyReply, FastifyRequest, FastifySchema, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault, RouteGenericInterface } from "fastify";
 import { registerRoutes } from "./routes";
-import fs from "fs";
 // Import plugins
 import env from "@fastify/env"
 import prismaPlugin from "./plugins/prisma.plugin";
@@ -16,7 +15,6 @@ import cors from "@fastify/cors"
 import underPressure from "@fastify/under-pressure"
 // Import schema
 import envSchema from "./schema/env.schema";
-import { log } from 'console';
 
 // Define types
 export type FastifyTypebox = FastifyInstance<
@@ -52,7 +50,6 @@ async function build(opts: {}, data: any = process.env) {
     schema: envSchema,
     data: data
   });
-  log(app.config.DATABASE_URL)
   await app.register(prismaPlugin, {
     datasourceUrl: app.config.DATABASE_URL,
   });
@@ -88,7 +85,8 @@ async function build(opts: {}, data: any = process.env) {
     retryAfter: 50,
     maxHeapUsedBytes: 100000000,
     maxRssBytes: 100000000,
-    maxEventLoopUtilization: 0.98
+    maxEventLoopUtilization: 0.98,
+    message: "Server under heavy load, please try again later."
   });
 
   // Register routes
