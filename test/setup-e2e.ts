@@ -5,9 +5,13 @@ import {
 } from '@testcontainers/postgresql';
 import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 import { execSync } from 'child_process';
-import { log } from 'console';
 import { Client } from 'pg';
 import { RedisClientType, createClient } from 'redis';
+import { AccessTokenPayload } from '../src/interfaces/token.interface';
+import { v4 as uuidv4 } from 'uuid';
+import jwt from 'jsonwebtoken';
+import cookie from '@fastify/cookie';
+import 'dotenv/config';
 
 let postgresContainer: StartedPostgreSqlContainer;
 let postgresClient: Client;
@@ -18,11 +22,12 @@ beforeAll(async () => {
   postgresClient = new Client({ connectionString: postgresContainer.getConnectionUri() });
   await postgresClient.connect();
   execSync('npx prisma migrate dev', { env: { ...process.env, DATABASE_URL: postgresContainer.getConnectionUri() } });
-})
+}, 10000)
 
 let redisContainer: StartedRedisContainer;
 let redisClient: RedisClientType;
 
+// Start the Redis container
 beforeAll(async () => {
   redisContainer = await new RedisContainer().start();
   redisClient = createClient({
@@ -30,7 +35,7 @@ beforeAll(async () => {
   })
   await redisClient.connect();
   expect(redisClient.isOpen).toBeTruthy();
-})
+}, 10000)
 
 afterAll(async () => {
   // Close the PostgreSQL connection and stop the container
@@ -41,9 +46,45 @@ afterAll(async () => {
   await redisContainer.stop();
 })
 
+if (!process.env.TOKEN_SECRET) {
+  throw new Error('TOKEN_SECRET is not defined')
+}
+
+if (!process.env.COOKIE_SECRET) {
+  throw new Error('COOKIE_SECRET is not defined')
+}
+
+const accessTokenPayload: AccessTokenPayload = {
+  uuidKey: uuidv4(),
+  email: 'test@ifelfi.com',
+  nickname: 'test',
+  imageUrl: null,
+}
+const accessToken: string = jwt.sign(accessTokenPayload, process.env.TOKEN_SECRET, { expiresIn: '15m', issuer: 'ifelfi.com' });
+
+const expiredAccessTokenPayload: AccessTokenPayload = {
+  uuidKey: uuidv4(),
+  email: 'expired@ifelfi.com',
+  nickname: 'expired',
+  imageUrl: null,
+}
+const expiredAccessToken: string = jwt.sign(expiredAccessTokenPayload, process.env.TOKEN_SECRET, { expiresIn: '0ms', issuer: 'ifelfi.com' });
+
+const refreshToken = jwt.sign({}, process.env.TOKEN_SECRET, { expiresIn: '30d' });
+const expiredRefreshToken = jwt.sign({}, process.env.TOKEN_SECRET, { expiresIn: '0ms' });
+
+const signer = cookie.signerFactory(process.env.COOKIE_SECRET);
+
 export {
   postgresClient,
   redisClient,
   postgresContainer,
   redisContainer,
+  accessTokenPayload,
+  accessToken,
+  expiredAccessTokenPayload,
+  expiredAccessToken,
+  refreshToken,
+  expiredRefreshToken,
+  signer,
 }
