@@ -1,7 +1,7 @@
 import { it, afterAll, beforeAll, describe, expect } from "@jest/globals";
 import { FastifyInstance } from "fastify";
 import build from "../../src/app";
-import { postgresClient, postgresContainer, redisContainer } from "../setup-e2e";
+import { createDefaultLocalUser, postgresContainer, redisContainer, salt } from "../setup-e2e";
 
 describe("Auth local", () => {
   let server: FastifyInstance;
@@ -11,6 +11,7 @@ describe("Auth local", () => {
       ...process.env,
       DATABASE_URL: postgresContainer.getConnectionUri(),
       REDIS_URL: redisContainer.getConnectionUrl(),
+      SALT: salt,
     });
   })
 
@@ -36,6 +37,20 @@ describe("Auth local", () => {
     });
 
     describe("Login", () => {
+      it("should return 200 and a token when login with proper data", async () => {
+        await createDefaultLocalUser();
+        const response = await server.inject({
+          method: 'POST',
+          url: '/auth/local/login',
+          payload: {
+            email: 'test@ifelfi.com',
+            password: 'password'
+          }
+        });
+        expect(response.statusCode).toBe(200);
+        expect(response.headers['authorization']).toBeDefined();
+        expect(response.cookies).toBeDefined();
+      });
     });
   });
 });
