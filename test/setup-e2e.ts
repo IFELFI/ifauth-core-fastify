@@ -75,6 +75,27 @@ const expiredRefreshToken = jwt.sign({}, process.env.TOKEN_SECRET, { expiresIn: 
 
 const signer = cookie.signerFactory(process.env.COOKIE_SECRET);
 
+const createLocalUser = async (email: string, nickname: string, password: string) => {
+  if (!process.env.TOKEN_SECRET) {
+    throw new Error('TOKEN_SECRET is not defined')
+  }
+
+  const user = await postgresClient.query(
+    `INSERT INTO "member"."users" (email) VALUES (${email}) RETURNING *`
+  )
+  postgresClient.query(
+    `INSERT INTO "member"."profile" (user_id, nickname, image_url) VALUES (${user.rows[0].id}, ${nickname}, null)`
+  )
+  postgresClient.query(
+    `INSERT INTO "auth"."password" (user_id, password) VALUES (${user.rows[0].id}, ${password})`
+  )
+  postgresClient.query(
+    `INSERT INTO "auth"."provider" (user_id, provider) VALUES (${user.rows[0].id}, 'local')`
+  )
+
+  return { uuidKey: user.rows[0].uuid_key as string, accessToken: jwt.sign(user.rows[0].uuid_key, process.env.TOKEN_SECRET, { expiresIn: '15m', issuer: 'ifelfi.com' }) }
+}
+
 export {
   postgresClient,
   redisClient,
