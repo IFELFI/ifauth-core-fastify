@@ -1,5 +1,5 @@
 import { provider_type, users } from "@prisma/client";
-import { FastifyTypebox } from "../..";
+import { FastifyTypebox } from "../../app";
 import { localLoginSchema, localSignupSchema } from "../../schema/auth.schema";
 import { Static } from "@sinclair/typebox";
 import { AccessTokenPayload, TokenPair } from "../../interfaces/token.interface";

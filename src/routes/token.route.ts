@@ -1,4 +1,4 @@
-import { FastifyTypebox } from "..";
+import { FastifyTypebox } from "../app";
 import { ReplyData } from "../interfaces/reply.interface";
 
 export default async function (fastify: FastifyTypebox) {
