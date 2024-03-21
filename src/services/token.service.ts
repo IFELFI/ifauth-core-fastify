@@ -19,6 +19,7 @@ export class TokenService {
     try {
       // Check if access token is valid
       const payload = this.#fastify.jwt.verify<AccessTokenPayload>(accessToken);
+      return true;
     } catch (error) {}
     try {
       const payload = this.#fastify.jwt.decode<AccessTokenPayload>(accessToken);
@@ -42,9 +43,9 @@ export class TokenService {
    */
   public async validateAndRefresh(tokenPair: TokenPair) {
     const verifyResult = await this.validate(tokenPair);
-    if (verifyResult === false) throw this.#fastify.httpErrors.unauthorized("Token is invalid");
+    if (verifyResult === false) throw this.#fastify.httpErrors.unauthorized("Token is invalid error");
     const payload = this.#fastify.jwt.decode<AccessTokenPayload>(tokenPair.accessToken);
-    if (payload === null) throw this.#fastify.httpErrors.unauthorized("Token is invalid");
+    if (payload === null) throw this.#fastify.httpErrors.unauthorized("Token is invalid error");
 
     // If access token is valid, generate new access and refresh tokens
     const newAccessToken = this.#fastify.jwt.sign(payload, { expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION });

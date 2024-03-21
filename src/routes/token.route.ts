@@ -10,8 +10,8 @@ export default async function (fastify: FastifyTypebox) {
     const unsignedRefreshCookie = request.unsignCookie(request.cookies.refresh ?? '');
     const refreshToken = unsignedRefreshCookie.value;
 
-    if (accessToken === undefined) throw fastify.httpErrors.unauthorized("Token is invalid");
-    if (refreshToken === null) throw fastify.httpErrors.unauthorized("Token is invalid");
+    if (accessToken === undefined) throw fastify.httpErrors.unauthorized("Access token is required");
+    if (refreshToken === null) throw fastify.httpErrors.unauthorized("Refresh token is required");
 
     const result = await fastify.services.tokenService.validateAndRefresh({ accessToken, refreshToken });
 
