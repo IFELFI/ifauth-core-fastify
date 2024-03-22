@@ -1,7 +1,7 @@
 import { it, afterAll, beforeAll, describe, expect, beforeEach } from "@jest/globals";
 import { FastifyInstance } from "fastify";
 import build from "../src/app";
-import { accessToken, createDefaultLocalUser, expiredAccessToken, postgresContainer, redisClient, redisContainer, refreshToken, signer } from "./setup-e2e";
+import { accessToken, createDefaultLocalUser, postgresContainer, redisClient, redisContainer, refreshToken, signer } from "./setup-e2e";
 
 describe("User", () => {
   let server: FastifyInstance;
@@ -20,7 +20,7 @@ describe("User", () => {
   });
 
   beforeEach(async () => {
-    const createdUser = await createDefaultLocalUser();
+    createdUser = await createDefaultLocalUser();
     await redisClient.set(createdUser.uuidKey, refreshToken);
   })
 
@@ -45,6 +45,24 @@ describe("User", () => {
         url: '/user/logout',
         headers: {
           'Authorization': `Bearer ${createdUser.expiredAccessToken}`
+        },
+        cookies: {
+          'refresh': signer.sign(refreshToken)
+        }
+      });
+      expect(response.statusCode).toBe(200);
+    });
+
+    it("should return 401 when logout with expired access token and refresh token", async () => {
+      redisClient.del(createdUser.uuidKey);
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/logout',
+        headers: {
+          'Authorization': `Bearer ${createdUser.expiredAccessToken}`
+        },
+        cookies: {
+          'refresh': signer.sign(refreshToken)
         }
       });
       expect(response.statusCode).toBe(401);
