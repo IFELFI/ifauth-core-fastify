@@ -60,11 +60,11 @@ afterEach(async () => {
 const salt = bcrypt.genSaltSync(10);
 
 // Issue an access token
-const issueAccessToken = (payload: AccessTokenPayload) => {
+const issueAccessToken = (payload: AccessTokenPayload, expiresIn: string = '15m') => {
   if (!process.env.TOKEN_SECRET) {
-    throw new Error('TOKEN_SECRET is not defined')
+    throw new Error('TOKEN_SECRET is not defined');
   }
-  return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: '15m', issuer: 'ifelfi.com' });
+  return jwt.sign(payload, process.env.TOKEN_SECRET, { expiresIn: expiresIn, issuer: 'ifelfi.com' });
 }
 
 // Create user with local provider
@@ -92,7 +92,7 @@ const createLocalUser = async (email: string, nickname: string, password: string
     imageUrl: null,
   }
 
-  return { uuidKey: user.rows[0].uuid_key as string, accessToken: issueAccessToken(payload)}
+  return { uuidKey: user.rows[0].uuid_key as string, accessToken: issueAccessToken(payload), expiredAccessToken: issueAccessToken(payload, '0ms') };
 }
 
 // Create default user for testing
