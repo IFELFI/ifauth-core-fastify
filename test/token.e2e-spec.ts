@@ -23,10 +23,10 @@ describe("Token", () => {
    * Success handling
    */
 
-  describe("[POST] /token/validate", () => {
+  describe("[GET] /token/validate", () => {
     it("should validate and refresh token if access token is valid", async () => {
       const response = await server.inject({
-        method: 'POST',
+        method: 'GET',
         url: '/token/validate',
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -43,7 +43,7 @@ describe("Token", () => {
     it("should validate and refresh token if access token is expired but refresh token is valid", async () => {
       await redisClient.set(expiredAccessTokenPayload.uuidKey, refreshToken)
       const response = await server.inject({
-        method: 'POST',
+        method: 'GET',
         url: '/token/validate',
         headers: {
           'Authorization': `Bearer ${expiredAccessToken}`
@@ -60,7 +60,7 @@ describe("Token", () => {
     it("should not validate and refresh token if access token is expired and refresh token is expired", async () => {
       await redisClient.set(expiredAccessTokenPayload.uuidKey, expiredRefreshToken)
       const response = await server.inject({
-        method: 'POST',
+        method: 'GET',
         url: '/token/validate',
         headers: {
           'Authorization': `Bearer ${expiredAccessToken}`
