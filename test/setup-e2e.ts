@@ -92,7 +92,10 @@ const createLocalUser = async (email: string, nickname: string, password: string
     imageUrl: null,
   }
 
-  return { uuidKey: user.rows[0].uuid_key as string, accessToken: issueAccessToken(payload), expiredAccessToken: issueAccessToken(payload, '0ms') };
+  const accessToken = issueAccessToken(payload);
+  const expiredAccessToken = issueAccessToken(payload, '0ms'); 
+
+  return { uuidKey: user.rows[0].uuid_key as string, accessToken: accessToken, expiredAccessToken: expiredAccessToken };
 }
 
 // Create default user for testing
