@@ -6,7 +6,7 @@ export default async function (fastify: FastifyInstance) {
 
   const basePath = '/user';
 
-  fastify.post(`${basePath}/logout`, async (request, reply) => {
+  fastify.get(`${basePath}/logout`, async (request, reply) => {
     const accessToken = request.headers.authorization?.split(' ')[1] ?? '';
     const refreshToken = request.cookies.refresh ?? '';
     const result = await fastify.services.tokenService.validate({ accessToken, refreshToken })
