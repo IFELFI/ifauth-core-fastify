@@ -54,7 +54,7 @@ describe("User", () => {
     });
 
     it("should return 401 when logout with expired access token and refresh token", async () => {
-      redisClient.del(createdUser.uuidKey);
+      await redisClient.del(createdUser.uuidKey);
       const response = await server.inject({
         method: 'GET',
         url: '/user/logout',
@@ -77,28 +77,18 @@ describe("User", () => {
     });
 
     it("should return 404 when logout with an invalid access token", async () => {
+      await redisClient.del(createdUser.uuidKey);
       const response = await server.inject({
         method: 'GET',
         url: '/user/logout',
         headers: {
           'Authorization': `Bearer ${accessToken}`
-        }
-      });
-      expect(response.statusCode).toBe(404);
-    });
-
-    it("should return 401 when logout with an expired access token", async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: '/user/logout',
-        headers: {
-          'Authorization': `Bearer ${createdUser.expiredAccessToken}`
         },
         cookies: {
           'refresh': signer.sign(refreshToken)
         }
       });
-      expect(response.statusCode).toBe(401);
+      expect(response.statusCode).toBe(404);
     });
   });
 })

@@ -7,8 +7,13 @@ export default async function (fastify: FastifyInstance) {
   const basePath = '/user';
 
   fastify.get(`${basePath}/logout`, async (request, reply) => {
-    const accessToken = request.headers.authorization?.split(' ')[1] ?? '';
-    const refreshToken = request.cookies.refresh ?? '';
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    const unsignedRefreshCookie = request.unsignCookie(request.cookies.refresh ?? '');
+    const refreshToken = unsignedRefreshCookie.value;
+
+    if (accessToken === undefined) throw fastify.httpErrors.unauthorized("Access token is required");
+    if (refreshToken === null) throw fastify.httpErrors.unauthorized("Refresh token is required");
+
     const result = await fastify.services.tokenService.validate({ accessToken, refreshToken })
     if (result === false) {
       const replyData: ReplyData = {
