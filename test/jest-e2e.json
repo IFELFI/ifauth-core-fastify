@@ -1,22 +1,12 @@
 {
   "maxWorkers": "50%",
-  "moduleFileExtensions": [
-    "js",
-    "json",
-    "ts"
-  ],
-  "setupFilesAfterEnv": [
-    "./setup-e2e.ts"
-  ],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "setupFilesAfterEnv": ["./setup-e2e.ts"],
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "rootDir": ".",
-  "roots": [
-    ".."
-  ],
-  "modulePaths": [
-    ".."
-  ],
+  "roots": [".."],
+  "modulePaths": [".."],
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   }
