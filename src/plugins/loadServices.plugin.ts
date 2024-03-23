@@ -1,6 +1,6 @@
-import { FastifyPluginAsync } from "fastify";
-import fp from "fastify-plugin";
-import services from "../services";
+import { FastifyPluginAsync } from 'fastify';
+import fp from 'fastify-plugin';
+import services from '../services';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -10,6 +10,6 @@ declare module 'fastify' {
 
 const loadServicesPlugin: FastifyPluginAsync = fp(async (fastify, opts) => {
   fastify.decorate('services', services(fastify));
-})
+});
 
 export default loadServicesPlugin;
