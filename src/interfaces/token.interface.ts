@@ -1,7 +1,6 @@
-import "@fastify/jwt";
-import { FastifyJwtNamespace } from '@fastify/jwt';
+import '@fastify/jwt';
 
-declare module "@fastify/jwt" {
+declare module '@fastify/jwt' {
   interface FastifyJWT {
     payload: AccessTokenPayload | null;
   }

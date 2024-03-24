@@ -1,19 +1,19 @@
 import { FastifyRequest } from 'fastify';
-import build from "./app";
+import build from './app';
 async function run() {
   const server = await build({
     ajv: {
       customOptions: {
-        removeAdditional: "all",
+        removeAdditional: 'all',
         useDefaults: true,
         coerceTypes: true,
         allErrors: true,
-      }
+      },
     },
     logger: {
-      level: "info",
-      file: __dirname + "/../logs/logs.log",
-      redact: ["req.headers.authorization"],
+      level: 'info',
+      file: __dirname + '/../logs/logs.log',
+      redact: ['req.headers.authorization'],
       serializers: {
         req(req: FastifyRequest) {
           return {
@@ -24,16 +24,16 @@ async function run() {
             remoteAddress: req.ip,
             hostname: req.hostname,
             remotePort: req.connection.remotePort,
-          }
-        }
-      }
-    }
+          };
+        },
+      },
+    },
   });
   const host = server.config.HOST;
   const port = server.config.PORT;
 
   await server.listen({ host, port });
-  console.log(`Server listening on port ${port}`)
+  console.log(`Server listening on port ${port}`);
 }
 
 run();
