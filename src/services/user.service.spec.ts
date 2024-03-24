@@ -9,7 +9,7 @@ describe('UserService', () => {
   const email = 'test@ifelfi.com';
   let service: UserService;
   let fastify: DeepMockProxy<FastifyInstance>;
-  beforeAll(async () => {
+  beforeAll(() => {
     fastify = mockDeep<FastifyInstance>();
     service = new UserService(fastify);
 
