@@ -61,7 +61,7 @@ describe('User', () => {
       expect(response.statusCode).toBe(200);
     });
 
-    it('should return 200 when logout without access token but refresh token is valid', async () => {
+    it('should return 200 when logout with expired access token but refresh token is valid', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/user/logout',
@@ -111,6 +111,59 @@ describe('User', () => {
         },
       });
       expect(response.statusCode).toBe(404);
+    });
+  });
+
+  describe('[DELETE] /user', () => {
+    it('should return 200 when delete user', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/user',
+        headers: {
+          Authorization: `Bearer ${createdUser.accessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(200);
+    });
+
+    it('should return 200 when delete user with expired access token but refresh token is valid', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/user',
+        headers: {
+          Authorization: `Bearer ${createdUser.expiredAccessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(200);
+    });
+
+    it('should return 401 when delete user with expired access token and refresh token', async () => {
+      await redisClient.del(createdUser.uuidKey);
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/user',
+        headers: {
+          Authorization: `Bearer ${createdUser.expiredAccessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('should return 401 when delete user without access and refresh token', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/user',
+      });
+      expect(response.statusCode).toBe(401);
     });
   });
 });
