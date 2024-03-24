@@ -1,11 +1,51 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
-import { AccessTokenPayload, TokenPair } from '../interfaces/token.interface';
+import {
+  AccessTokenPayload,
+  TokenPair,
+  isAccessTokenPayload,
+} from '../interfaces/token.interface';
 
 export class TokenService {
   #fastify: FastifyInstance;
 
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
+  }
+
+  /**
+   * Check if token is valid or expired
+   * @param token Token to validate
+   * @param accessToken If true, validate access token. Otherwise, validate refresh token
+   * @returns Validation result
+   */
+  public async isValidOrExpired(
+    token: string,
+    accessToken: boolean,
+  ): Promise<{ result: boolean; payload?: AccessTokenPayload }> {
+    try {
+      if (accessToken) {
+        // If access token, verify with secret key
+        const payload = this.#fastify.jwt.verify<AccessTokenPayload>(token);
+        if (isAccessTokenPayload(payload) === false)
+          throw new Error('Access token is invalid');
+        return { result: true, payload };
+      } else {
+        // If refresh token, verify it
+        this.#fastify.jwt.verify<{}>(token, { onlyCookie: true });
+        return { result: true };
+      }
+    } catch (error) {
+      if (accessToken) {
+        const payload = this.#fastify.jwt.decode<AccessTokenPayload>(token, {
+          complete: false,
+        });
+        if (isAccessTokenPayload(payload) === true)
+          return { result: false, payload };
+      } else {
+        return { result: false };
+      }
+      throw new Error('Token is invalid');
+    }
   }
 
   /**
@@ -17,25 +57,38 @@ export class TokenService {
     const { accessToken, refreshToken } = tokenPair;
 
     try {
-      // Check if access token is valid
-      const payload = this.#fastify.jwt.verify<AccessTokenPayload>(accessToken);
-      return true;
-    } catch (error) {}
-    try {
-      const payload = this.#fastify.jwt.decode<AccessTokenPayload>(accessToken);
-      if (payload === null) throw new Error('Access token is invalid');
-      const savedRefreshToken = await this.#fastify.redis.get(payload.uuidKey);
-      if (savedRefreshToken === null)
-        throw new Error('Refresh token is invalid');
+      // Check if access token is valid or expired
+      const accessTokenResult = await this.isValidOrExpired(accessToken, true);
 
-      // Check if refresh token is valid
-      if (refreshToken !== savedRefreshToken)
-        throw new Error('Refresh token is not matching');
-      this.#fastify.jwt.verify<{}>(refreshToken, { onlyCookie: true });
+      // If access token is expired, check if refresh token is valid
+      if (
+        accessTokenResult.result === false &&
+        accessTokenResult.payload !== undefined
+      ) {
+        const refreshTokenResult = await this.isValidOrExpired(
+          refreshToken,
+          false,
+        );
+        // If refresh token is invalid, return false
+        if (refreshTokenResult.result === false) return false;
+        // Get saved refresh token from database
+        const savedRefreshToken = await this.#fastify.redis.get(
+          accessTokenResult.payload.uuidKey,
+        );
+        // If saved refresh token is different from the one in request, return false
+        if (savedRefreshToken === null || refreshToken !== savedRefreshToken)
+          return false;
+        return true;
+      } else if (accessTokenResult.result === true) {
+        // If access token is valid, return true
+        return true;
+      } else {
+        // If none of the above, return false
+        return false;
+      }
     } catch (error) {
       return false;
     }
-    return true;
   }
 
   /**
@@ -49,12 +102,19 @@ export class TokenService {
       throw this.#fastify.httpErrors.unauthorized('Token is invalid error');
     const payload = this.#fastify.jwt.decode<AccessTokenPayload>(
       tokenPair.accessToken,
+      { complete: false },
     );
     if (payload === null)
       throw this.#fastify.httpErrors.unauthorized('Token is invalid error');
 
     // If access token is valid, generate new access and refresh tokens
-    const newAccessToken = this.#fastify.jwt.sign(payload, {
+    const newAccessTokenPayload: AccessTokenPayload = {
+      uuidKey: payload.uuidKey,
+      email: payload.email,
+      nickname: payload.nickname,
+      imageUrl: payload.imageUrl,
+    };
+    const newAccessToken = this.#fastify.jwt.sign(newAccessTokenPayload, {
       expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
     });
     const newRefreshToken = this.#fastify.jwt.sign(
