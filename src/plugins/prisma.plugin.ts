@@ -13,7 +13,7 @@ export type FastifyPrismaClientOptions = Prisma.Subset<
 >;
 export type FastifyPrisma = FastifyPluginCallback<FastifyPrismaClientOptions>;
 
-const fastifyPrisma: FastifyPrisma = async (fastify, opts, done) => {
+const fastifyPrisma: FastifyPrisma = async (fastify, opts) => {
   const prisma = new PrismaClient(opts);
 
   await prisma.$connect();
@@ -23,7 +23,6 @@ const fastifyPrisma: FastifyPrisma = async (fastify, opts, done) => {
   fastify.addHook('onClose', async (fastify) => {
     await fastify.prisma.$disconnect();
   });
-  done();
 };
 
 const fastifyPrismaPlugin = fp(fastifyPrisma, {
