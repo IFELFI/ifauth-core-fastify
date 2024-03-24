@@ -13,14 +13,24 @@ export class UserService {
    * @returns Promise of logout result
    */
   public async logout(uuidKey: string): Promise<boolean> {
-    const findUser = await this.#fastify.prisma.users.findUnique({
-      where: { uuid_key: uuidKey },
-    });
+    const findUser = await this.#fastify.prisma.users
+      .findUnique({
+        where: { uuid_key: uuidKey },
+      })
+      .catch((error) => {
+        throw this.#fastify.httpErrors.internalServerError(
+          'Failed to find user',
+        );
+      });
     if (!findUser) {
       throw this.#fastify.httpErrors.notFound('User not found');
     }
     // Delete refresh token from Redis
-    await this.#fastify.redis.del(uuidKey);
+    await this.#fastify.redis.del(uuidKey).catch((error) => {
+      throw this.#fastify.httpErrors.internalServerError(
+        'Failed to delete refresh token from server',
+      );
+    });
     return true;
   }
 
@@ -33,10 +43,14 @@ export class UserService {
     await this.#fastify.prisma.users
       .delete({ where: { uuid_key: uuidKey } })
       .catch((error) => {
-        throw this.#fastify.httpErrors.internalServerError(error.message);
+        throw this.#fastify.httpErrors.internalServerError(
+          'Failed to delete user',
+        );
       });
     await this.#fastify.redis.del(uuidKey).catch((error) => {
-      throw this.#fastify.httpErrors.internalServerError(error.message);
+      throw this.#fastify.httpErrors.internalServerError(
+        'Failed to delete refresh token from server',
+      );
     });
     return true;
   }
