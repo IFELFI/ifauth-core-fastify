@@ -42,6 +42,11 @@ describe('AuthLocalService', () => {
         throw new Error(msg || 'Unauthorized');
       });
     jest
+      .spyOn(fastify.httpErrors, 'badRequest')
+      .mockImplementation((msg?: string) => {
+        throw new Error(msg || 'Bad request');
+      });
+    jest
       .spyOn(fastify.jwt, 'sign')
       .mockImplementation((payload, options) =>
         jwt.sign(payload, secret, { expiresIn: options.expiresIn }),
@@ -185,13 +190,6 @@ describe('AuthLocalService', () => {
       jest
         .spyOn(fastify.prisma, '$transaction')
         .mockImplementation((callback) => callback(fastify.prisma));
-    });
-    it('should return token pair with access and refresh tokens', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
-        email: email,
-        password: password,
-      };
-
       jest
         .spyOn(fastify.prisma.users, 'findUnique')
         .mockResolvedValue(findUser);
@@ -204,10 +202,75 @@ describe('AuthLocalService', () => {
       jest
         .spyOn(fastify.prisma.provider, 'findUnique')
         .mockResolvedValue(findProvider);
+    });
+
+    it('should return token pair with access and refresh tokens', async () => {
+      const loginData: Static<typeof localSignupSchema.body> = {
+        email: email,
+        password: password,
+      };
 
       const result = await service.login(loginData);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+    });
+
+    it('should throw unauthorized error when user not found', async () => {
+      const loginData: Static<typeof localSignupSchema.body> = {
+        email: email,
+        password: password,
+      };
+
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.login(loginData)).rejects.toThrow(
+        'Invalid email or password',
+      );
+    });
+
+    it('should throw unauthorized error when password not found', async () => {
+      const loginData: Static<typeof localSignupSchema.body> = {
+        email: email,
+        password: password,
+      };
+
+      jest
+        .spyOn(fastify.prisma.users, 'findUnique')
+        .mockResolvedValue(findUser);
+      jest.spyOn(fastify.prisma.password, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.login(loginData)).rejects.toThrow(
+        'Invalid email or password',
+      );
+    });
+
+    it('should throw unauthorized error when password is incorrect', async () => {
+      const loginData: Static<typeof localSignupSchema.body> = {
+        email: email,
+        password: password,
+      };
+      jest
+        .spyOn(fastify.prisma.password, 'findUnique')
+        .mockResolvedValue({ ...findPass, password: 'wrong_password' });
+
+      await expect(service.login(loginData)).rejects.toThrow(
+        'Invalid email or password',
+      );
+    });
+
+    it('should throw unauthorized error when provider is not local', async () => {
+      const loginData: Static<typeof localSignupSchema.body> = {
+        email: email,
+        password: password,
+      };
+
+      jest
+        .spyOn(fastify.prisma.provider, 'findUnique')
+        .mockResolvedValue({ ...findProvider, provider: provider_type.google });
+
+      await expect(service.login(loginData)).rejects.toThrow(
+        'This email is registered with a different provider',
+      );
     });
   });
 });
