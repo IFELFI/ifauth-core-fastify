@@ -99,6 +99,14 @@ export class AuthLocalService {
           'Invalid email or password',
         );
       }
+      const provider = await tx.provider.findUnique({
+        where: { user_id: searchUser.id },
+      });
+      if (!provider || provider.provider !== provider_type.local) {
+        throw this.#fastify.httpErrors.badRequest(
+          'This email is registered with a different provider',
+        );
+      }
       const searchPassword = await tx.password.findUnique({
         where: { user_id: searchUser.id },
       });

@@ -97,14 +97,6 @@ async function build(opts: {}, data: any = process.env) {
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
-  await app.register(underPressure, {
-    maxEventLoopDelay: 1000,
-    retryAfter: 50,
-    maxHeapUsedBytes: 100000000,
-    maxRssBytes: 100000000,
-    maxEventLoopUtilization: 0.98,
-    message: 'Server under heavy load, please try again later.',
-  });
 
   // Register routes
   registerRoutes(app);
