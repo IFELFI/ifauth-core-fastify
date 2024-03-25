@@ -5,7 +5,6 @@ import {
   createDefaultLocalUser,
   postgresContainer,
   redisContainer,
-  salt,
 } from '../setup-e2e';
 
 describe('Auth local', () => {
@@ -18,7 +17,6 @@ describe('Auth local', () => {
         ...process.env,
         DATABASE_URL: postgresContainer.getConnectionUri(),
         REDIS_URL: redisContainer.getConnectionUrl(),
-        SALT: salt,
       },
     );
   });

@@ -1,5 +1,6 @@
 import { FastifyRequest } from 'fastify';
 import build from './app';
+import fastifyUnderPressure from '@fastify/under-pressure';
 async function run() {
   const server = await build({
     ajv: {
@@ -29,6 +30,16 @@ async function run() {
       },
     },
   });
+
+  server.register(fastifyUnderPressure, {
+    maxEventLoopDelay: 1000,
+    retryAfter: 50,
+    maxHeapUsedBytes: 100000000,
+    maxRssBytes: 100000000,
+    maxEventLoopUtilization: 0.98,
+    message: 'Server under heavy load, please try again later.',
+  });
+
   const host = server.config.HOST;
   const port = server.config.PORT;
 

@@ -12,6 +12,17 @@ export interface AccessTokenPayload {
   imageUrl: string | null;
 }
 
+export function isAccessTokenPayload(
+  payload: any,
+): payload is AccessTokenPayload {
+  return (
+    typeof payload.uuidKey === 'string' &&
+    typeof payload.email === 'string' &&
+    typeof payload.nickname === 'string' &&
+    (typeof payload.imageUrl === 'string' || payload.imageUrl === null)
+  );
+}
+
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
