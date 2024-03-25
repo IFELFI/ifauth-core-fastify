@@ -177,5 +177,4 @@ export {
   issueAccessToken,
   createLocalUser,
   createDefaultLocalUser,
-  salt,
 };
