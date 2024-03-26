@@ -1,7 +1,10 @@
 import { FastifyRequest } from 'fastify';
 import build from './app';
 import fastifyUnderPressure from '@fastify/under-pressure';
+import fs from 'fs';
+
 async function run() {
+  fs.mkdirSync(__dirname + '/../logs', { recursive: true });
   const server = await build({
     ajv: {
       customOptions: {
