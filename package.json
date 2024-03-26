@@ -45,7 +45,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json"
