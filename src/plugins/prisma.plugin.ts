@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import { FastifyPluginAsync } from 'fastify';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { FastifyPluginCallback } from 'fastify';
 import fp from 'fastify-plugin';
 
 declare module 'fastify' {
@@ -7,17 +7,27 @@ declare module 'fastify' {
     prisma: PrismaClient;
   }
 }
+export type FastifyPrismaClientOptions = Prisma.Subset<
+  Prisma.PrismaClientOptions,
+  Prisma.PrismaClientOptions
+>;
+export type FastifyPrisma = FastifyPluginCallback<FastifyPrismaClientOptions>;
 
-const prismaPlugin: FastifyPluginAsync = fp(async (fastify, opts) => {
-  const prisma = new PrismaClient();
+const fastifyPrisma: FastifyPrisma = async (fastify, opts) => {
+  const prisma = new PrismaClient(opts);
 
   await prisma.$connect();
 
   fastify.decorate('prisma', prisma);
 
   fastify.addHook('onClose', async (fastify) => {
-    fastify.prisma.$disconnect();
-  })
-})
+    await fastify.prisma.$disconnect();
+  });
+};
 
-export default prismaPlugin;
+const fastifyPrismaPlugin = fp(fastifyPrisma, {
+  fastify: '4.x',
+  name: 'fastify-prisma',
+});
+
+export default fastifyPrismaPlugin;

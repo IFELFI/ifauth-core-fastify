@@ -1,5 +1,9 @@
-import { FastifyInstance } from "fastify";
-import { AccessTokenPayload, TokenPair } from "../interfaces/token.interface";
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import {
+  AccessTokenPayload,
+  TokenPair,
+  isAccessTokenPayload,
+} from '../interfaces/token.interface';
 
 export class TokenService {
   #fastify: FastifyInstance;
@@ -9,30 +13,82 @@ export class TokenService {
   }
 
   /**
+   * Check if token is valid or expired
+   * @param token Token to validate
+   * @param accessToken If true, validate access token. Otherwise, validate refresh token
+   * @returns Validation result
+   */
+  public async isValidOrExpired(
+    token: string,
+    accessToken: boolean,
+  ): Promise<{ result: boolean; payload?: AccessTokenPayload }> {
+    try {
+      if (accessToken) {
+        // If access token, verify with secret key
+        const payload = this.#fastify.jwt.verify<AccessTokenPayload>(token);
+        if (isAccessTokenPayload(payload) === false)
+          throw new Error('Access token is invalid');
+        return { result: true, payload };
+      } else {
+        // If refresh token, verify it
+        this.#fastify.jwt.verify<{}>(token, { onlyCookie: true });
+        return { result: true };
+      }
+    } catch (error) {
+      if (accessToken) {
+        const payload = this.#fastify.jwt.decode<AccessTokenPayload>(token, {
+          complete: false,
+        });
+        if (isAccessTokenPayload(payload) === true)
+          return { result: false, payload };
+      } else {
+        return { result: false };
+      }
+      throw new Error('Token is invalid');
+    }
+  }
+
+  /**
    * Validate token pair
    * @param tokenPair Pair of access and refresh tokens
    * @returns Validation result
    */
   public async validate(tokenPair: TokenPair): Promise<boolean> {
-    const {accessToken, refreshToken} = tokenPair;
+    const { accessToken, refreshToken } = tokenPair;
 
     try {
-      // Check if access token is valid
-      const payload = this.#fastify.jwt.verify<AccessTokenPayload>(accessToken);
-    } catch (error) {}
-    try {
-      const payload = await this.#fastify.jwt.decode<AccessTokenPayload>(accessToken);
-      if (payload === null) throw new Error('Access token is invalid');
-      const savedRefreshToken = await this.#fastify.redis.get(payload.uuidKey);
-      if (savedRefreshToken === null) throw new Error('Refresh token is invalid');
+      // Check if access token is valid or expired
+      const accessTokenResult = await this.isValidOrExpired(accessToken, true);
 
-      // Check if refresh token is valid
-      if (refreshToken !== savedRefreshToken) throw new Error('Refresh token is not matching');
-      this.#fastify.jwt.verify<{}>(refreshToken, { onlyCookie: true });
+      // If access token is expired, check if refresh token is valid
+      if (
+        accessTokenResult.result === false &&
+        accessTokenResult.payload !== undefined
+      ) {
+        const refreshTokenResult = await this.isValidOrExpired(
+          refreshToken,
+          false,
+        );
+        // If refresh token is invalid, return false
+        if (refreshTokenResult.result === false) return false;
+        // Get saved refresh token from database
+        const savedRefreshToken = await this.#fastify.redis.get(
+          accessTokenResult.payload.uuidKey,
+        );
+        // If saved refresh token is different from the one in request, return false
+        if (savedRefreshToken === null || refreshToken !== savedRefreshToken)
+          return false;
+        return true;
+      } else if (accessTokenResult.result === true) {
+        // If access token is valid, return true
+        return true;
+      } else {
+        // If none of the above, return false
+        return false;
+      }
     } catch (error) {
       return false;
     }
-    return true;
   }
 
   /**
@@ -42,16 +98,51 @@ export class TokenService {
    */
   public async validateAndRefresh(tokenPair: TokenPair) {
     const verifyResult = await this.validate(tokenPair);
-    if (verifyResult === false) throw this.#fastify.httpErrors.unauthorized("Token is invalid");
-    const payload = this.#fastify.jwt.decode<AccessTokenPayload>(tokenPair.accessToken);
-    if (payload === null) throw this.#fastify.httpErrors.unauthorized("Token is invalid");
+    if (verifyResult === false)
+      throw this.#fastify.httpErrors.unauthorized('Token is invalid error');
+    const payload = this.#fastify.jwt.decode<AccessTokenPayload>(
+      tokenPair.accessToken,
+      { complete: false },
+    );
+    if (payload === null)
+      throw this.#fastify.httpErrors.unauthorized('Token is invalid error');
 
     // If access token is valid, generate new access and refresh tokens
-    const newAccessToken = this.#fastify.jwt.sign(payload, { expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION });
-    const newRefreshToken = this.#fastify.jwt.sign({}, { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION });
+    const newAccessTokenPayload: AccessTokenPayload = {
+      uuidKey: payload.uuidKey,
+      email: payload.email,
+      nickname: payload.nickname,
+      imageUrl: payload.imageUrl,
+    };
+    const newAccessToken = this.#fastify.jwt.sign(newAccessTokenPayload, {
+      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
+    });
+    const newRefreshToken = this.#fastify.jwt.sign(
+      {},
+      { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
+    );
     this.#fastify.redis.set(payload.uuidKey, newRefreshToken);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  }
 
+  /**
+   * Parse token pair from request
+   * @param request Fastify request
+   * @returns Token pair
+   */
+  public async parseTokenPair(request: FastifyRequest): Promise<TokenPair> {
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    const unsignedRefreshCookie = request.unsignCookie(
+      request.cookies.refresh ?? '',
+    );
+    const refreshToken = unsignedRefreshCookie.value;
+
+    if (accessToken === undefined)
+      throw this.#fastify.httpErrors.unauthorized('Access token is required');
+    if (refreshToken === null)
+      throw this.#fastify.httpErrors.unauthorized('Refresh token is required');
+
+    return { accessToken, refreshToken };
   }
 }
