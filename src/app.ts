@@ -73,11 +73,13 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
+      domain: '.ifelfi.com',
       sameSite: 'none',
       path: '/',
       secure: true,
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7,
+      expires: new Date(Date.now() + 60 * 60 * 24 * 7),
       signed: true,
     },
   } as FastifyCookieOptions);
