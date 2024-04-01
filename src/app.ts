@@ -73,7 +73,7 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
-      samesite: 'none',
+      sameSite: 'none',
       path: '/',
       secure: true,
       httpOnly: true,
