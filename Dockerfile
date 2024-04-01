@@ -1,6 +1,6 @@
 FROM node:21-alpine
 LABEL title="ifauth-core"
-LABEL version="1.0.1"
+LABEL version="1.0.2"
 LABEL maintainer="ifelfi"
 
 RUN apk add --no-cache g++ make py3-pip
