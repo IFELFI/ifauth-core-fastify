@@ -15,3 +15,9 @@ export const localLoginSchema = {
     password: Type.String({ minLength: 8, maxLength: 256 }),
   }),
 };
+
+export const codeAuthSchema = {
+  querystring: Type.Object({
+    code: Type.String(),
+  }),
+};
