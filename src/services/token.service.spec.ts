@@ -5,11 +5,15 @@ import { AccessTokenPayload } from '../interfaces/token.interface';
 import { FastifyInstance } from 'fastify';
 import { TokenService } from './token.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { profile, users } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 describe('TokenService', () => {
   let service: TokenService;
   let fastify: DeepMockProxy<FastifyInstance>;
   const uuidKey = uuidv4();
+  const code = randomBytes(16).toString('hex');
+
   const accessPayload: AccessTokenPayload = {
     uuidKey,
     email: 'test@ifelfi.com',
@@ -58,20 +62,70 @@ describe('TokenService', () => {
       AUTH_CODE_EXPIRATION: 60 * 3,
     };
 
-    jest
-      .spyOn(fastify.httpErrors, 'unauthorized')
-      .mockImplementation((msg?: string) => {
-        throw new Error(msg);
-      });
-
+    jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
     jest.spyOn(fastify.redis, 'get').mockImplementation((key) => {
       return new Promise((resolve) => {
         if (key === uuidKey) {
           resolve(refreshToken);
+        } else if (key === code) {
+          resolve('1');
         } else {
           resolve(null);
         }
       });
+    });
+    jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
+
+    jest
+      .spyOn(fastify.httpErrors, 'unauthorized')
+      .mockImplementation((msg?: string) => {
+        throw new Error(msg || 'Unauthorized');
+      });
+    jest
+      .spyOn(fastify.httpErrors, 'internalServerError')
+      .mockImplementation((msg?: string) => {
+        throw new Error(msg || 'Internal server error');
+      });
+    jest
+      .spyOn(fastify.httpErrors, 'notFound')
+      .mockImplementation((msg?: string) => {
+        throw new Error(msg || 'Not found');
+      });
+  });
+
+  describe('issueAuthorizationCode', () => {
+    it('should return authorization code', async () => {
+      const result = await service.issueAuthorizationCode(1);
+      expect(result).toBeTruthy();
+      expect(result).toHaveLength(32);
+    });
+  });
+
+  describe('issueTokenPair', () => {
+    const user: users = {
+      id: 1,
+      email: 'test@ifelfi.com',
+      uuid_key: uuidKey,
+    };
+    const profile: profile = {
+      id: 1,
+      user_id: user.id,
+      nickname: 'test',
+      image_url: null,
+      join_date: new Date(),
+      update_date: new Date(),
+    };
+
+    beforeAll(() => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+    });
+
+    it('should return token pair', async () => {
+      const result = await service.issueTokenPair(code);
+
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy();
     });
   });
 
