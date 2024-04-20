@@ -4,12 +4,69 @@ import {
   TokenPair,
   isAccessTokenPayload,
 } from '../interfaces/token.interface';
+import { randomBytes } from 'crypto';
 
 export class TokenService {
   #fastify: FastifyInstance;
 
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
+  }
+
+  public async issueAuthorizationCode(id: number): Promise<string> {
+    const code = randomBytes(16).toString('hex');
+    await this.#fastify.redis
+      .set(code, id.toString(), 'EX', this.#fastify.config.AUTH_CODE_EXPIRATION)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Set code error');
+      });
+    return code;
+  }
+
+  public async issueTokenPair(code: string): Promise<TokenPair> {
+    const id = await this.#fastify.redis
+      .get(code)
+      .catch((err) => {
+        throw this.#fastify.httpErrors.internalServerError('Get code error');
+      })
+      .then((result) => {
+        if (result === null)
+          throw this.#fastify.httpErrors.notFound('Code not found');
+        if (result.match(/^[0-9]+$/) === null)
+          throw this.#fastify.httpErrors.internalServerError('Code error');
+
+        this.#fastify.redis.del(code);
+        return parseInt(result);
+      });
+
+    const searchUser = await this.#fastify.prisma.users.findUnique({
+      where: { id },
+    });
+    const profile = await this.#fastify.prisma.profile.findUnique({
+      where: { user_id: id },
+    });
+
+    if (searchUser === null || profile === null)
+      throw this.#fastify.httpErrors.internalServerError('User not found');
+    
+    const AccessTokenPayload: AccessTokenPayload = {
+      uuidKey: searchUser.uuid_key,
+      email: searchUser.email,
+      nickname: profile.nickname,
+      imageUrl: profile.image_url,
+    };
+
+    const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, {
+      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
+    });
+    const refreshToken = this.#fastify.jwt.sign(
+      {},
+      { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
+    );
+
+    this.#fastify.redis.set(searchUser.uuid_key, refreshToken);
+
+    return { accessToken, refreshToken };
   }
 
   /**
