@@ -48,14 +48,13 @@ describe('OAuth', () => {
     it('should return authorization token', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: `/oauth/local?redirectUrl=`,
+        url: `/oauth/local?redirectUrl=http://test.com`,
         payload: {
           email: 'test@ifelfi.com',
           password: 'password',
         },
       });
-      expect(response.body).toBe('adsf');
-      expect(response.statusCode).toBe(200);
+      expect(response.statusCode).toBe(302);
     });
   });
 });
