@@ -13,6 +13,11 @@ export class TokenService {
     this.#fastify = fastify;
   }
 
+  /**
+   * Issue authorization code
+   * @param id User id
+   * @returns Authorization code
+   */
   public async issueAuthorizationCode(id: number): Promise<string> {
     const code = randomBytes(16).toString('hex');
     await this.#fastify.redis
@@ -23,19 +28,28 @@ export class TokenService {
     return code;
   }
 
+  /**
+   * Issue token pair
+   * @param code code to issue token pair
+   * @returns Token pair
+   */
   public async issueTokenPair(code: string): Promise<TokenPair> {
     const id = await this.#fastify.redis
       .get(code)
-      .catch((err) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError('Get code error');
       })
-      .then((result) => {
+      .then(async (result) => {
         if (result === null)
           throw this.#fastify.httpErrors.notFound('Code not found');
         if (result.match(/^[0-9]+$/) === null)
           throw this.#fastify.httpErrors.internalServerError('Code error');
 
-        this.#fastify.redis.del(code);
+        await this.#fastify.redis.del(code).catch(() => {
+          throw this.#fastify.httpErrors.internalServerError(
+            'Delete code error',
+          );
+        });
         return parseInt(result);
       });
 
@@ -48,7 +62,7 @@ export class TokenService {
 
     if (searchUser === null || profile === null)
       throw this.#fastify.httpErrors.internalServerError('User not found');
-    
+
     const AccessTokenPayload: AccessTokenPayload = {
       uuidKey: searchUser.uuid_key,
       email: searchUser.email,
