@@ -112,7 +112,34 @@ describe('TokenService', () => {
     });
   });
 
-  describe('issueTokenPair', () => {
+  describe('issueTokenPairByUserId', () => {
+    it('should return token pair', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+      jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
+
+      const result = await service.issueTokenPairByUserId(user.id);
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy();
+    });
+
+    it('should throw internal server error when user not found', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
+      await expect(service.issueTokenPairByUserId(user.id)).rejects.toThrow(
+        'User not found',
+      );
+    });
+
+    it('should throw internal server error when profile not found', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(null);
+      await expect(service.issueTokenPairByUserId(user.id)).rejects.toThrow(
+        'User not found',
+      );
+    });
+  });
+
+  describe('issueTokenPairByAuthCode', () => {
     it('should return token pair', async () => {
       jest.spyOn(fastify.redis, 'get').mockResolvedValue(user.id.toString());
       jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
@@ -121,7 +148,7 @@ describe('TokenService', () => {
         .spyOn(fastify.prisma.profile, 'findUnique')
         .mockResolvedValue(profile);
 
-      const result = await service.issueTokenPair(code);
+      const result = await service.issueTokenPairByAuthCode(code);
 
       expect(result.accessToken).toBeTruthy();
       expect(result.refreshToken).toBeTruthy();
@@ -129,21 +156,31 @@ describe('TokenService', () => {
 
     it('should throw internal server error when getting code throw error', async () => {
       jest.spyOn(fastify.redis, 'get').mockRejectedValue(new Error());
-      await expect(service.issueTokenPair(code)).rejects.toThrow(
+      await expect(service.issueTokenPairByAuthCode(code)).rejects.toThrow(
         'Get code error',
       );
     });
 
     it('should throw not found error when code is not found', async () => {
       jest.spyOn(fastify.redis, 'get').mockResolvedValue(null);
-      await expect(service.issueTokenPair(code)).rejects.toThrow(
+      await expect(service.issueTokenPairByAuthCode(code)).rejects.toThrow(
         'Code not found',
       );
     });
 
     it('should throw internal server error when code is invalid', async () => {
       jest.spyOn(fastify.redis, 'get').mockResolvedValue('invalid');
-      await expect(service.issueTokenPair(code)).rejects.toThrow('Code error');
+      await expect(service.issueTokenPairByAuthCode(code)).rejects.toThrow(
+        'Code error',
+      );
+    });
+
+    it('should throw internal server error when deleting code throw error', async () => {
+      jest.spyOn(fastify.redis, 'get').mockResolvedValue(user.id.toString());
+      jest.spyOn(fastify.redis, 'del').mockRejectedValue(new Error());
+      await expect(service.issueTokenPairByAuthCode(code)).rejects.toThrow(
+        'Delete code error',
+      );
     });
   });
 

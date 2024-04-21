@@ -2,10 +2,6 @@ import { provider_type, users } from '@prisma/client';
 import { FastifyTypebox } from '../../app';
 import { localLoginSchema, localSignupSchema } from '../../schema/auth.schema';
 import { Static } from '@sinclair/typebox';
-import {
-  AccessTokenPayload,
-  TokenPair,
-} from '../../interfaces/token.interface';
 import bcrypt from 'bcrypt';
 
 export class AuthLocalService {
@@ -18,11 +14,11 @@ export class AuthLocalService {
   /**
    * Signup
    * @param signupData Signup data
-   * @returns Token pair with access and refresh tokens
+   * @returns User id
    */
   public async signup(
     signupData: Static<typeof localSignupSchema.body>,
-  ): Promise<TokenPair> {
+  ): Promise<number> {
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const searchUser = await tx.users.findUnique({
         where: { email: signupData.email },
@@ -56,24 +52,7 @@ export class AuthLocalService {
           },
         });
 
-        const AccessTokenPayload: AccessTokenPayload = {
-          uuidKey: createUser.uuid_key,
-          email: createUser.email,
-          nickname: nickname,
-          imageUrl: signupData.imageUrl || null,
-        };
-
-        const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, {
-          expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
-        });
-        const refreshToken = this.#fastify.jwt.sign(
-          {},
-          { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
-        );
-
-        this.#fastify.redis.set(createUser.uuid_key, refreshToken);
-
-        return { accessToken, refreshToken };
+        return createUser.id;
       } catch (error) {
         throw this.#fastify.httpErrors.internalServerError(
           'Error creating user',
@@ -85,11 +64,11 @@ export class AuthLocalService {
   /**
    * Login
    * @param loginData Login data
-   * @returns Token pair with access and refresh tokens
+   * @returns User id
    */
   public async login(
     loginData: Static<typeof localLoginSchema.body>,
-  ): Promise<TokenPair> {
+  ): Promise<number> {
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const searchUser = await tx.users.findUnique({
         where: { email: loginData.email },
@@ -134,24 +113,7 @@ export class AuthLocalService {
         );
       }
 
-      const AccessTokenPayload: AccessTokenPayload = {
-        uuidKey: searchUser.uuid_key,
-        email: searchUser.email,
-        nickname: profile.nickname,
-        imageUrl: profile.image_url,
-      };
-
-      const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, {
-        expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
-      });
-      const refreshToken = this.#fastify.jwt.sign(
-        {},
-        { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
-      );
-
-      this.#fastify.redis.set(searchUser.uuid_key, refreshToken);
-
-      return { accessToken, refreshToken };
+      return searchUser.id;
     });
   }
 }
