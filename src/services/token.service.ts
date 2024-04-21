@@ -29,30 +29,11 @@ export class TokenService {
   }
 
   /**
-   * Issue token pair
-   * @param code code to issue token pair
+   * Issue token pair by user id
+   * @param id User id
    * @returns Token pair
    */
-  public async issueTokenPair(code: string): Promise<TokenPair> {
-    const id = await this.#fastify.redis
-      .get(code)
-      .catch(() => {
-        throw this.#fastify.httpErrors.internalServerError('Get code error');
-      })
-      .then(async (result) => {
-        if (result === null)
-          throw this.#fastify.httpErrors.notFound('Code not found');
-        if (result.match(/^[0-9]+$/) === null)
-          throw this.#fastify.httpErrors.internalServerError('Code error');
-
-        await this.#fastify.redis.del(code).catch(() => {
-          throw this.#fastify.httpErrors.internalServerError(
-            'Delete code error',
-          );
-        });
-        return parseInt(result);
-      });
-
+  public async issueTokenPairByUserId(id: number): Promise<TokenPair> {
     const searchUser = await this.#fastify.prisma.users.findUnique({
       where: { id },
     });
@@ -81,6 +62,35 @@ export class TokenService {
     this.#fastify.redis.set(searchUser.uuid_key, refreshToken);
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Issue token pair by authorization code
+   * @param code code to issue token pair
+   * @returns Token pair
+   */
+  public async issueTokenPairByAuthCode(code: string): Promise<TokenPair> {
+    const id = await this.#fastify.redis
+      .get(code)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Get code error');
+      })
+      .then(async (result) => {
+        if (result === null)
+          throw this.#fastify.httpErrors.notFound('Code not found');
+        if (result.match(/^[0-9]+$/) === null)
+          throw this.#fastify.httpErrors.internalServerError('Code error');
+
+        await this.#fastify.redis.del(code).catch(() => {
+          throw this.#fastify.httpErrors.internalServerError(
+            'Delete code error',
+          );
+        });
+        return parseInt(result);
+      });
+
+      const tokenPair = await this.issueTokenPairByUserId(id);
+      return tokenPair;
   }
 
   /**

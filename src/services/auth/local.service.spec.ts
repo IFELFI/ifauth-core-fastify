@@ -123,8 +123,8 @@ describe('AuthLocalService', () => {
         .mockResolvedValue(createdProvider);
 
       const result = await service.signup(signupData);
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toBeTruthy();
+      expect(result).toBe(createdUser.id);
     });
 
     it('should throw conflict error when email already exists', async () => {
@@ -216,8 +216,8 @@ describe('AuthLocalService', () => {
       };
 
       const result = await service.login(loginData);
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toBeTruthy();
+      expect(result).toBe(findUser.id);
     });
 
     it('should throw unauthorized error when user not found', async () => {
