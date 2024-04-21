@@ -1,9 +1,28 @@
+import { Type } from '@sinclair/typebox';
 import { FastifyTypebox } from '../app';
-import { ReplyData } from '../interfaces/reply.interface';
 import { oauthSchema } from '../schema/oauth.schema';
 
 export default async function (fastify: FastifyTypebox) {
   const basePath = '/oauth';
+
+  fastify.get(
+    `${basePath}/health`,
+    {
+      schema: {
+        querystring: Type.Object({
+          code: Type.String(),
+        }),
+      },
+    },
+    async (request, reply) => {
+      const code = request.query.code;
+      if (!code) {
+        reply.send('Invalid code');
+        return;
+      }
+      reply.send(code);
+    },
+  );
 
   fastify.post(
     `${basePath}/local`,
@@ -11,14 +30,19 @@ export default async function (fastify: FastifyTypebox) {
       schema: oauthSchema,
     },
     async (request, reply) => {
-      const result = await fastify.services.authLocalService.login(
+      const userId = await fastify.services.authLocalService.login(
         request.body,
       );
+      const code =
+        await fastify.services.tokenService.issueAuthorizationCode(userId);
       const redirectUrl = request.query.redirectUrl;
-      const replyData: ReplyData = {
-        success: true,
-        message: 'User logged in',
-      };
+
+      const testData = await fetch(
+        'test'
+      );
+      reply.send(testData.body);
+
+      reply.code(302).redirect(`${redirectUrl}?code=${code}`);
     },
   );
 }
