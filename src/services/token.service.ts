@@ -4,12 +4,93 @@ import {
   TokenPair,
   isAccessTokenPayload,
 } from '../interfaces/token.interface';
+import { randomBytes } from 'crypto';
 
 export class TokenService {
   #fastify: FastifyInstance;
 
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
+  }
+
+  /**
+   * Issue authorization code
+   * @param id User id
+   * @returns Authorization code
+   */
+  public async issueAuthorizationCode(id: number): Promise<string> {
+    const code = randomBytes(16).toString('hex');
+    await this.#fastify.redis
+      .set(code, id.toString(), 'EX', this.#fastify.config.AUTH_CODE_EXPIRATION)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Set code error');
+      });
+    return code;
+  }
+
+  /**
+   * Issue token pair by user id
+   * @param id User id
+   * @returns Token pair
+   */
+  public async issueTokenPairByUserId(id: number): Promise<TokenPair> {
+    const searchUser = await this.#fastify.prisma.users.findUnique({
+      where: { id },
+    });
+    const profile = await this.#fastify.prisma.profile.findUnique({
+      where: { user_id: id },
+    });
+
+    if (searchUser === null || profile === null)
+      throw this.#fastify.httpErrors.internalServerError('User not found');
+
+    const AccessTokenPayload: AccessTokenPayload = {
+      uuidKey: searchUser.uuid_key,
+      email: searchUser.email,
+      nickname: profile.nickname,
+      imageUrl: profile.image_url,
+    };
+
+    const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, {
+      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
+    });
+    const refreshToken = this.#fastify.jwt.sign(
+      {},
+      { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
+    );
+
+    this.#fastify.redis.set(searchUser.uuid_key, refreshToken);
+
+    return { accessToken, refreshToken };
+  }
+
+  /**
+   * Issue token pair by authorization code
+   * @param code code to issue token pair
+   * @returns Token pair
+   */
+  public async issueTokenPairByAuthCode(code: string): Promise<TokenPair> {
+    const id = await this.#fastify.redis
+      .get(code)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Get code error');
+      })
+      .then(async (result) => {
+        if (result === null)
+          throw this.#fastify.httpErrors.notFound('Code not found');
+        if (result.match(/^[0-9]+$/) === null)
+          throw this.#fastify.httpErrors.internalServerError('Code error');
+
+        await this.#fastify.redis.del(code).catch(() => {
+          throw this.#fastify.httpErrors.internalServerError(
+            'Delete code error',
+          );
+        });
+        return parseInt(result);
+      });
+
+      const tokenPair = await this.issueTokenPairByUserId(id);
+      return tokenPair;
   }
 
   /**

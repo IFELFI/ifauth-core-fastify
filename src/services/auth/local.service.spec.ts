@@ -26,6 +26,24 @@ describe('AuthLocalService', () => {
     fastify = mockDeep<FastifyInstance>();
     service = new AuthLocalService(fastify);
 
+    // mock config
+    fastify.config = {
+      HOST: 'localhost',
+      PORT: 3000,
+      ACCESS_TOKEN_EXPIRATION: 60 * 5,
+      REFRESH_TOKEN_EXPIRATION: 60 * 60 * 24 * 3,
+      DATABASE_URL: 'postgres://localhost:5432',
+      REDIS_URL: 'redis://localhost:6379',
+      TOKEN_SECRET: 'secret',
+      COOKIE_SECRET: 'secret',
+      SALT: 'salt',
+      AUTH_CODE_EXPIRATION: 60 * 3,
+    };
+
+    // mock redis methods
+    jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
+
+    // mock fastify error methods
     jest
       .spyOn(fastify.httpErrors, 'conflict')
       .mockImplementation((msg?: string) => {
@@ -51,19 +69,6 @@ describe('AuthLocalService', () => {
       .mockImplementation((payload, options) =>
         jwt.sign(payload, secret, { expiresIn: options.expiresIn }),
       );
-    jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
-
-    fastify.config = {
-      HOST: 'localhost',
-      PORT: 3000,
-      ACCESS_TOKEN_EXPIRATION: '1h',
-      REFRESH_TOKEN_EXPIRATION: '1d',
-      DATABASE_URL: 'postgres://localhost:5432',
-      REDIS_URL: 'redis://localhost:6379',
-      TOKEN_SECRET: 'secret',
-      COOKIE_SECRET: 'secret',
-      SALT: 'salt',
-    };
   });
 
   describe('signup', () => {
@@ -118,8 +123,8 @@ describe('AuthLocalService', () => {
         .mockResolvedValue(createdProvider);
 
       const result = await service.signup(signupData);
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toBeTruthy();
+      expect(result).toBe(createdUser.id);
     });
 
     it('should throw conflict error when email already exists', async () => {
@@ -211,8 +216,8 @@ describe('AuthLocalService', () => {
       };
 
       const result = await service.login(loginData);
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toBeTruthy();
+      expect(result).toBe(findUser.id);
     });
 
     it('should throw unauthorized error when user not found', async () => {

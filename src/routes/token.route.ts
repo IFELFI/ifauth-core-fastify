@@ -1,8 +1,17 @@
 import { FastifyTypebox } from '../app';
 import { ReplyData } from '../interfaces/reply.interface';
+import { codeAuthSchema } from '../schema/auth.schema';
 
 export default async function (fastify: FastifyTypebox) {
   const basePath = '/token';
+
+  fastify.get(`${basePath}/issue`,{
+    schema: codeAuthSchema,
+    
+  }, async (request, reply) => {
+    const code = request.query.code
+    
+  });
 
   fastify.get(`${basePath}/validate`, async (request, reply) => {
     const { accessToken, refreshToken } =
