@@ -1,6 +1,5 @@
-import { Type } from '@sinclair/typebox';
 import { FastifyTypebox } from '../app';
-import { oauthSchema } from '../schema/oauth.schema';
+import { localLoginSchema } from '../schema/auth.schema';
 
 export default async function (fastify: FastifyTypebox) {
   const basePath = '/oauth';
@@ -8,7 +7,7 @@ export default async function (fastify: FastifyTypebox) {
   fastify.post(
     `${basePath}/local`,
     {
-      schema: oauthSchema,
+      schema: localLoginSchema,
     },
     async (request, reply) => {
       const userId = await fastify.services.authLocalService.login(
@@ -16,9 +15,8 @@ export default async function (fastify: FastifyTypebox) {
       );
       const code =
         await fastify.services.tokenService.issueAuthorizationCode(userId);
-      const redirectUrl = request.query.redirectUrl;
 
-      reply.code(302).redirect(`${redirectUrl}?code=${code}`);
+      reply.send({ code })
     },
   );
 }
