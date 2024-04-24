@@ -1,5 +1,5 @@
 import { FastifyTypebox } from '../../app';
-import { ReplyData } from '../../interfaces/reply.interface';
+import { AuthReplyData, ReplyData } from '../../interfaces/reply.interface';
 import { localLoginSchema, localSignupSchema } from '../../schema/auth.schema';
 
 export default async function (fastify: FastifyTypebox) {
@@ -14,17 +14,14 @@ export default async function (fastify: FastifyTypebox) {
       const userId = await fastify.services.authLocalService.signup(
         request.body,
       );
-      const { accessToken, refreshToken } =
-        await fastify.services.tokenService.issueTokenPairByUserId(userId);
-      const replyData: ReplyData = {
-        success: true,
+      const code =
+        await fastify.services.tokenService.issueAuthorizationCode(userId);
+
+      const replyData: AuthReplyData = {
         message: 'User created',
+        code: code,
       };
-      reply
-        .code(201)
-        .setCookie('refresh', refreshToken)
-        .header('Authorization', `Bearer ${accessToken}`)
-        .send(replyData);
+      reply.code(201).send(replyData);
     },
   );
 
@@ -37,16 +34,15 @@ export default async function (fastify: FastifyTypebox) {
       const userId = await fastify.services.authLocalService.login(
         request.body,
       );
-      const { accessToken, refreshToken } =
-        await fastify.services.tokenService.issueTokenPairByUserId(userId);
-      const replyData: ReplyData = {
-        success: true,
+      const code = 
+        await fastify.services.tokenService.issueAuthorizationCode(userId);
+
+      const replyData: AuthReplyData = {
         message: 'User logged in',
+        code: code,
       };
       reply
         .code(200)
-        .setCookie('refresh', refreshToken)
-        .header('Authorization', `Bearer ${accessToken}`)
         .send(replyData);
     },
   );
