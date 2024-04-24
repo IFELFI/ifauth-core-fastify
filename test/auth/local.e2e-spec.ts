@@ -35,9 +35,9 @@ describe('Auth local', () => {
           password: 'password',
         },
       });
+      const data = JSON.parse(response.body);
       expect(response.statusCode).toBe(201);
-      expect(response.headers['authorization']).toBeDefined();
-      expect(response.cookies).toBeDefined();
+      expect(data).toHaveProperty('code');
     });
 
     it('should return 400 when signup with invalid data', async () => {
@@ -112,9 +112,9 @@ describe('Auth local', () => {
           password: 'password',
         },
       });
+      const data = JSON.parse(response.body);
       expect(response.statusCode).toBe(200);
-      expect(response.headers['authorization']).toBeDefined();
-      expect(response.cookies).toBeDefined();
+      expect(data).toHaveProperty('code');
     });
 
     it('should return 400 when login with invalid data', async () => {
