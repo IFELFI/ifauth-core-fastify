@@ -74,7 +74,7 @@ async function build(opts: {}, data: any = process.env) {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
       domain: '.ifelfi.com',
-      sameSite: 'none',
+      sameSite: 'lax',
       path: '/',
       secure: true,
       httpOnly: true,
