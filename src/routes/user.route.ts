@@ -5,6 +5,37 @@ import { ReplyData } from '../interfaces/reply.interface';
 export default async function (fastify: FastifyInstance) {
   const basePath = '/user';
 
+  fastify.get(`${basePath}/profile`, async (request, reply) => {
+    const { accessToken, refreshToken } =
+      await fastify.services.tokenService.parseTokenPair(request);
+
+    const result = await fastify.services.tokenService.validate({
+      accessToken,
+      refreshToken,
+    });
+
+    if (result === false) {
+      const replyData: ReplyData = {
+        message: 'Token is invalid',
+      };
+      reply.code(401).send(replyData);
+    }
+
+    const decoded = fastify.jwt.decode<AccessTokenPayload>(accessToken);
+    if (decoded === null)
+      throw fastify.httpErrors.unauthorized('Token is invalid');
+
+    const profile = await fastify.services.userService.getProfile(
+      decoded.uuidKey,
+    );
+
+    const replyData: ReplyData = {
+      message: 'User profile found',
+      data: profile,
+    };
+    reply.code(200).send(replyData);
+  });
+
   fastify.get(`${basePath}/logout`, async (request, reply) => {
     const { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);

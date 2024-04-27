@@ -3,7 +3,7 @@ import { UserService } from './user.service';
 import { FastifyInstance } from 'fastify';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { v4 as uuidv4 } from 'uuid';
-import { users, profile } from '@prisma/client';
+import { users, profile, provider, provider_type } from '@prisma/client';
 
 describe('UserService', () => {
   let service: UserService;
@@ -23,6 +23,11 @@ describe('UserService', () => {
     join_date: new Date(),
     update_date: new Date(),
   };
+  const provider: provider = {
+    id: 1,
+    user_id: user.id,
+    provider: provider_type.local,
+  };
 
   beforeAll(() => {
     fastify = mockDeep<FastifyInstance>();
@@ -39,6 +44,58 @@ describe('UserService', () => {
       .mockImplementation((msg?: string) => {
         throw new Error(msg || 'Not found');
       });
+  });
+
+  describe('getProfile', () => {
+    it('should return user profile', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+      jest.spyOn(fastify.prisma.provider, 'findUnique').mockResolvedValue(provider);
+      expect(await service.getProfile(user.uuid_key)).toEqual({
+        email: user.email,
+        nickname: profile.nickname,
+        imageUrl: profile.image_url,
+        joinDate: profile.join_date,
+        updateDate: profile.update_date,
+        provider: 'local',
+      });
+    });
+    
+    it('should throw not found error', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('User not found');
+    });
+
+    it('should throw internal server error', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockRejectedValue(new Error());
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('Failed to find user');
+    });
+
+    it('should throw not found error when profile not found', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(null);
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('User profile not found');
+    });
+
+    it('should throw internal server error when find profile', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockRejectedValue(new Error());
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('Failed to find user profile');
+    });
+
+    it('should throw not found error when provider not found', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+      jest.spyOn(fastify.prisma.provider, 'findUnique').mockResolvedValue(null);
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('User provider not found');
+    });
+
+    it('should throw internal server error when find provider', async () => {
+      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+      jest.spyOn(fastify.prisma.provider, 'findUnique').mockRejectedValue(new Error());
+      await expect(service.getProfile(user.uuid_key)).rejects.toThrow('Failed to find user provider');
+    });
   });
 
   describe('logout', () => {
