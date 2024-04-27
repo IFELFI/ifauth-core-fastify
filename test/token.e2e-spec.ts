@@ -62,7 +62,7 @@ describe('Token', () => {
           code: 'invalid_code',
         },
       });
-      expect(response.statusCode).toBe(401);
+      expect(response.statusCode).toBe(404);
     });
   });
 
