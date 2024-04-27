@@ -46,6 +46,91 @@ describe('User', () => {
     await redisClient.set(createdUser.uuidKey, refreshToken);
   });
 
+  describe('[GET] /user/profile', () => {
+    const expectedProfile = {
+         email: 'test@ifelfi.com',
+          nickname: 'test',
+          imageUrl: null,
+          joinDate: expect.any(String),
+          updateDate: expect.any(String),
+          provider: 'local',
+    };
+  
+    it('should return 200 when get user profile', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/profile',
+        headers: {
+          Authorization: `Bearer ${createdUser.accessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        message: 'User profile found',
+        data: expectedProfile,
+      });
+    });
+
+    it('should return 200 when get user profile with expired access token but refresh token is valid', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/profile',
+        headers: {
+          Authorization: `Bearer ${createdUser.expiredAccessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        message: 'User profile found',
+        data: expectedProfile,
+      });
+    });
+
+    it('should return 401 when get user profile with expired access token and refresh token', async () => {
+      await redisClient.del(createdUser.uuidKey);
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/profile',
+        headers: {
+          Authorization: `Bearer ${createdUser.expiredAccessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('should return 401 when get user profile without access and refresh token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/profile',
+      });
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('should return 404 when get user profile with an invalid access token', async () => {
+      await redisClient.del(createdUser.uuidKey);
+      const response = await server.inject({
+        method: 'GET',
+        url: '/user/profile',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cookies: {
+          refresh: signer.sign(refreshToken),
+        },
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe('[GET] /user/logout', () => {
     it('should return 200 when logout', async () => {
       const response = await server.inject({
