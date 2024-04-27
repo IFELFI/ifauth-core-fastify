@@ -1,14 +1,21 @@
-FROM node:21-alpine
+FROM node:21-alpine as build
+
 LABEL title="ifauth-core"
-LABEL version="2.0.1"
+LABEL version="2.1.0"
 LABEL maintainer="ifelfi"
 
-RUN apk add --no-cache g++ make py3-pip
+WORKDIR /app
+COPY . ./
+RUN npm install -y && \
+    npm run build && \
+    npm prune --production
+
+FROM node:21-alpine as deploy
 
 WORKDIR /app
+RUN rm -rf ./*
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./
 
-COPY . /app
-RUN npm install -y && \
-    npm run build
-
-CMD ["npm", "start"]
+ENTRYPOINT ["npm", "start"]
