@@ -15,7 +15,6 @@ export default async function (fastify: FastifyInstance) {
     });
     if (result === false) {
       const replyData: ReplyData = {
-        success: false,
         message: 'Token is invalid',
       };
       reply.code(401).send(replyData);
@@ -28,13 +27,11 @@ export default async function (fastify: FastifyInstance) {
     );
     if (logoutResult === false) {
       const replyData: ReplyData = {
-        success: false,
         message: 'Error logging out',
       };
       reply.code(500).send(replyData);
     } else {
       const replyData: ReplyData = {
-        success: true,
         message: 'User logged out',
       };
       reply.code(200).send(replyData);
@@ -51,7 +48,6 @@ export default async function (fastify: FastifyInstance) {
     });
     if (result === false) {
       const replyData: ReplyData = {
-        success: false,
         message: 'Token is invalid',
       };
       reply.code(401).send(replyData);
@@ -64,13 +60,11 @@ export default async function (fastify: FastifyInstance) {
     );
     if (deleteResult === false) {
       const replyData: ReplyData = {
-        success: false,
         message: 'Error deleting user',
       };
       reply.code(500).send(replyData);
     } else {
       const replyData: ReplyData = {
-        success: true,
         message: 'User deleted',
       };
       reply.code(200).send(replyData);

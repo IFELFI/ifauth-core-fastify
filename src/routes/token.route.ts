@@ -11,9 +11,21 @@ export default async function (fastify: FastifyTypebox) {
   }, async (request, reply) => {
     const code = request.query.code
     
+    const { accessToken, refreshToken } =
+      await fastify.services.tokenService.issueTokenPairByAuthCode(code);
+
+    const replyData: ReplyData = {
+      message: 'Token is issued',
+    };
+
+    reply
+      .code(200)
+      .setCookie('refresh', refreshToken)
+      .header('Authorization', `Bearer ${accessToken}`)
+      .send(replyData);
   });
 
-  fastify.get(`${basePath}/validate`, async (request, reply) => {
+  fastify.get(`${basePath}/refresh`, async (request, reply) => {
     const { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);
 
@@ -23,9 +35,9 @@ export default async function (fastify: FastifyTypebox) {
     });
 
     const replyData: ReplyData = {
-      success: true,
-      message: 'Token is valid and refreshed',
+      message: 'Token is refreshed',
     };
+
     reply
       .code(200)
       .setCookie('refresh', result.refreshToken)

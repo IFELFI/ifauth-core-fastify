@@ -1,5 +1,8 @@
 export interface ReplyData {
-  success: boolean;
   message: string;
   data?: any;
+}
+
+export interface AuthReplyData extends ReplyData {
+  code: string;
 }
