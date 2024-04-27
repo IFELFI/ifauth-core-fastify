@@ -110,6 +110,7 @@ const createLocalUser = async (
   const expiredAccessToken = issueAccessToken(payload, '0ms');
 
   return {
+    id: user.rows[0].id as number,
     uuidKey: user.rows[0].uuid_key as string,
     accessToken: accessToken,
     expiredAccessToken: expiredAccessToken,

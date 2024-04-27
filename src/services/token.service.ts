@@ -42,7 +42,7 @@ export class TokenService {
     });
 
     if (searchUser === null || profile === null)
-      throw this.#fastify.httpErrors.internalServerError('User not found');
+      throw this.#fastify.httpErrors.notFound('User not found');
 
     const AccessTokenPayload: AccessTokenPayload = {
       uuidKey: searchUser.uuid_key,
