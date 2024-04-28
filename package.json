@@ -13,7 +13,8 @@
     "@prisma/client": "^5.13.0",
     "@sinclair/typebox": "^0.32.25",
     "bcrypt": "^5.1.1",
-    "fastify": "^4.26.2"
+    "fastify": "^4.26.2",
+    "typia": "^6.0.3"
   },
   "name": "ifauth-api",
   "version": "1.0.0",
@@ -39,8 +40,10 @@
     "prisma": "^5.13.0",
     "redis": "^4.6.13",
     "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5",
+    "ts-patch": "^3.1.2",
+    "typescript": "^5.4.2",
     "uuid": "^9.0.1"
   },
   "scripts": {
@@ -48,7 +51,8 @@
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev src/index.ts",
     "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prepare": "ts-patch install && typia patch"
   },
   "keywords": [],
   "author": "sauce",
