@@ -2,9 +2,9 @@ import { it, afterAll, beforeAll, describe, expect } from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import build from '../../src/app';
 import {
-  createDefaultLocalUser,
   postgresContainer,
   redisContainer,
+  setupData,
 } from '../setup-e2e';
 
 describe('Auth local', () => {
@@ -52,12 +52,12 @@ describe('Auth local', () => {
     });
 
     it('should return 400 when signup with an existing email', async () => {
-      await createDefaultLocalUser();
+      const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/signup',
         payload: {
-          email: 'test@ifelfi.com',
+          email: data.user.user.email,
           password: 'password',
         },
       });
@@ -69,7 +69,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/signup',
         payload: {
-          email: 'test',
+          email: 'invalid_email',
           password: 'password',
         },
       });
@@ -103,39 +103,39 @@ describe('Auth local', () => {
 
   describe('[POST] /auth/local/login', () => {
     it('should return 200 and a token when login with proper data', async () => {
-      await createDefaultLocalUser();
+      const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: 'test@ifelfi.com',
-          password: 'password',
+          email: data.user.user.email,
+          password: data.user.realPassword,
         },
       });
-      const data = JSON.parse(response.body);
+      const body = JSON.parse(response.body);
       expect(response.statusCode).toBe(200);
-      expect(data).toHaveProperty('code');
+      expect(body).toHaveProperty('code');
     });
 
     it('should return 400 when login with invalid data', async () => {
-      await createDefaultLocalUser();
+      const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: 'test@ifelfi.com',
+          email: data.user.user.email,
         },
       });
       expect(response.statusCode).toBe(400);
     });
 
     it('should return 401 when login with invalid password', async () => {
-      await createDefaultLocalUser();
+      const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: 'test@ifelfi.com',
+          email: data.user.user.email,
           password: 'wrong_password',
         },
       });
@@ -143,13 +143,13 @@ describe('Auth local', () => {
     });
 
     it('should return 401 when login with invalid email', async () => {
-      await createDefaultLocalUser();
+      const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/login',
         payload: {
           email: 'wrong@ifelfi.com',
-          password: 'password',
+          password: data.user.password.password,
         },
       });
       expect(response.statusCode).toBe(401);
