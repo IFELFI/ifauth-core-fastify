@@ -26,6 +26,7 @@ import cors from '@fastify/cors';
 import underPressure from '@fastify/under-pressure';
 // Import schema
 import envSchema from './schema/env.schema';
+import typiaPlugin from './plugins/typia.plugin';
 
 // Define types
 export type FastifyTypebox = FastifyInstance<
@@ -70,6 +71,7 @@ async function build(opts: {}, data: any = process.env) {
   });
   await app.register(sensible);
   await app.register(loadServicesPlugin);
+  await app.register(typiaPlugin);
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
