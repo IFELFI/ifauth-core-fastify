@@ -9,19 +9,12 @@ export default async function (fastify: FastifyInstance) {
     const { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);
 
-    const result = await fastify.services.tokenService.validate({
+    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
       accessToken,
       refreshToken,
     });
 
-    if (result === false) {
-      const replyData: ReplyData = {
-        message: 'Token is invalid',
-      };
-      reply.code(401).send(replyData);
-    }
-
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(accessToken);
+    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
     if (decoded === null)
       throw fastify.httpErrors.unauthorized('Token is invalid');
 
@@ -40,17 +33,12 @@ export default async function (fastify: FastifyInstance) {
     const { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);
 
-    const result = await fastify.services.tokenService.validate({
+    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
       accessToken,
       refreshToken,
     });
-    if (result === false) {
-      const replyData: ReplyData = {
-        message: 'Token is invalid',
-      };
-      reply.code(401).send(replyData);
-    }
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(accessToken);
+
+    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
     if (decoded === null)
       throw fastify.httpErrors.unauthorized('Token is invalid');
     const logoutResult = await fastify.services.userService.logout(
@@ -73,17 +61,12 @@ export default async function (fastify: FastifyInstance) {
     const { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);
 
-    const result = await fastify.services.tokenService.validate({
+    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
       accessToken,
       refreshToken,
     });
-    if (result === false) {
-      const replyData: ReplyData = {
-        message: 'Token is invalid',
-      };
-      reply.code(401).send(replyData);
-    }
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(accessToken);
+
+    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
     if (decoded === null)
       throw fastify.httpErrors.unauthorized('Token is invalid');
     const deleteResult = await fastify.services.userService.deleteUser(
