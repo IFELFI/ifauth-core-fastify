@@ -1,7 +1,7 @@
 import { it, beforeAll, describe, expect, jest } from '@jest/globals';
 import { v4 as uuidv4 } from 'uuid';
-import jwt, { JsonWebTokenError } from 'jsonwebtoken';
-import { AccessTokenPayload } from '../interfaces/token.interface';
+import jwt from 'jsonwebtoken';
+import { AccessTokenPayloadData } from '../interfaces/token.interface';
 import { FastifyInstance } from 'fastify';
 import { TokenService } from './token.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
@@ -29,27 +29,38 @@ describe('TokenService', () => {
   };
 
   // payload data
-  const accessPayload: AccessTokenPayload = {
+  const accessPayloadData: AccessTokenPayloadData = {
     uuidKey: user.uuid_key,
     email: user.email,
     nickname: profile.nickname,
     imageUrl: profile.image_url,
   };
 
-  // token data
+  /**
+   * Generate token data
+   */
+  // Authorization code
   const secret = 'secret';
   const code = randomBytes(16).toString('hex');
-  const accessToken = jwt.sign(accessPayload, secret, { expiresIn: '2h' });
-  const refreshToken = jwt.sign({}, secret, { expiresIn: '2d' });
-  const expiredAccessToken = jwt.sign(accessPayload, secret, {
+  // Access token
+  const accessToken = jwt.sign(accessPayloadData, secret, { expiresIn: '2h', issuer: 'ifelfi.com' });
+  const expiredAccessToken = jwt.sign(accessPayloadData, secret, {
     expiresIn: '0ms',
+    issuer: 'ifelfi.com',
   });
-  const expiredRefreshToken = jwt.sign({}, secret, { expiresIn: '0ms' });
-  const invalidAccessToken = jwt.sign(accessPayload, 'wrong', {
+  const wrongSecretAccessToken = jwt.sign(accessPayloadData, 'wrong', {
     expiresIn: '1h',
+    issuer: 'ifelfi.com',
   });
-  const invalidRefreshToken = jwt.sign({}, 'wrong', { expiresIn: '2d' });
-  const wrongPayloadAccessToken = jwt.sign({}, secret, { expiresIn: '2h' });
+  const wrongPayloadAccessToken = jwt.sign({}, secret, { expiresIn: '2h', issuer: 'ifelfi.com' });
+  // Refresh token
+  const refreshToken = jwt.sign({}, secret, { expiresIn: '2d', issuer: 'ifelfi.com' });
+  const expiredRefreshToken = jwt.sign({}, secret, { expiresIn: '0ms', issuer: 'ifelfi.com' });
+  const wrongSecretRefreshToken = jwt.sign({}, 'wrong', { expiresIn: '2d', issuer: 'ifelfi.com' });
+  const wrongPayloadRefreshToken = jwt.sign({ wrong: 'payload' }, secret, {
+    expiresIn: '2d',
+    issuer: 'ifelfi.com',
+  });
 
   beforeAll(() => {
     fastify = mockDeep<FastifyInstance>();
@@ -115,7 +126,9 @@ describe('TokenService', () => {
   describe('issueTokenPairByUserId', () => {
     it('should return token pair', async () => {
       jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
-      jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
+      jest
+        .spyOn(fastify.prisma.profile, 'findUnique')
+        .mockResolvedValue(profile);
       jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
 
       const result = await service.issueTokenPairByUserId(user.id);
@@ -184,114 +197,103 @@ describe('TokenService', () => {
     });
   });
 
-  describe('isValidOrExpired', () => {
-    it('should return true when token is valid', async () => {
-      const result = await service.isValidOrExpired(accessToken, true);
+  describe('verifyAccessToken', () => {
+    it('should return payload when token is valid', async () => {
+      const result = await service.verifyAccessToken(accessToken);
       expect(result.result).toBe(true);
+      expect(result.payload).toBeTruthy();
+    });
+
+    it('should throw error when token with wrong secret', async () => {
+      const result = await service.verifyAccessToken(wrongSecretAccessToken);
+      expect(result.result).toBe(false);
+      expect(result.payload).toBeNull();
+    });
+
+    it('should throw error when token is expired', async () => {
+      const result = await service.verifyAccessToken(expiredAccessToken);
+      expect(result.result).toBe(false);
+      expect(result.payload).toBeTruthy();
+    });
+
+    it('should throw error when token is invalid payload', async () => {
+      const result = await service.verifyAccessToken(wrongPayloadAccessToken);
+      expect(result.result).toBe(false);
+      expect(result.payload).toBeNull();
+    });
+  });
+
+  describe('verifyRefreshToken', () => {
+    it('should return true when token is valid', async () => {
+      jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
+      expect(await service.verifyRefreshToken(refreshToken, user.uuid_key)).toBe(true);
     });
 
     it('should return false when token is expired', async () => {
-      const result = await service.isValidOrExpired(expiredAccessToken, true);
-      expect(result.result).toBe(false);
+      expect(await service.verifyRefreshToken(expiredRefreshToken, user.uuid_key)).toBe(false);
     });
 
-    it('should return false when token is invalid', async () => {
-      const result = await service.isValidOrExpired(invalidAccessToken, true);
-      expect(result.result).toBe(false);
+    it('should throw error when token is invalid', async () => {
+      expect(await service.verifyRefreshToken(wrongSecretRefreshToken, user.uuid_key)).toBe(false);
     });
 
-    it('should return true when token is valid refresh token', async () => {
-      const result = await service.isValidOrExpired(refreshToken, false);
-      expect(result.result).toBe(true);
+    it('should throw error when token is invalid', async () => {
+      expect(await service.verifyRefreshToken(wrongPayloadRefreshToken, user.uuid_key)).toBe(false);
     });
 
-    it('should return false when token is expired refresh token', async () => {
-      const result = await service.isValidOrExpired(expiredRefreshToken, false);
-      expect(result.result).toBe(false);
-    });
-
-    it('should return false when token is invalid refresh token', async () => {
-      const result = await service.isValidOrExpired(invalidRefreshToken, false);
-      expect(result.result).toBe(false);
-    });
   });
 
-  describe('validate', () => {
-    it('should return true when access token is valid', async () => {
-      jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
-      expect(await service.validate({ accessToken, refreshToken })).toBe(true);
+  describe('refresh', () => {
+    it('should return new token pair when payload data is valid', async () => {
+      jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
+      const result = await service.refresh(accessPayloadData);
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy();
+    })
+
+    it('should throw error when payload data is invalid', async () => {
+      await expect(service.refresh({} as AccessTokenPayloadData)).rejects.toThrow(
+        'Payload data is invalid',
+      );
+    });
+  })
+
+  describe('validateOrRefresh', () => {
+    it('should return given token pair when access token is valid', async () => {
+      const result = await service.validateOrRefresh({
+        accessToken,
+        refreshToken,
+      });
+      expect(result.accessToken).toBe(accessToken);
+      expect(result.refreshToken).toBe(refreshToken);
     });
 
-    it('should return true when access token is expired but refresh token is valid', async () => {
+    it('should return new token pair when access token is expired', async () => {
       jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
-      expect(
-        await service.validate({
-          accessToken: expiredAccessToken,
+      const result = await service.validateOrRefresh({
+        accessToken: expiredAccessToken,
+        refreshToken,
+      });
+      expect(result.accessToken).toBeTruthy();
+      expect(result.refreshToken).toBeTruthy();
+    });
+
+    it('should throw error when access token is invalid', async () => {
+      await expect(
+        service.validateOrRefresh({
+          accessToken: wrongSecretAccessToken,
           refreshToken,
         }),
-      ).toBe(true);
+      ).rejects.toThrow('Access token is invalid error');
     });
 
-    it('should return false when access token is expired and refresh token is expired', async () => {
-      expect(
-        await service.validate({
+    it('should throw error when access token is expired and refresh token is invalid', async () => {
+      await expect(
+        service.validateOrRefresh({
           accessToken: expiredAccessToken,
-          refreshToken: expiredRefreshToken,
+          refreshToken: wrongSecretRefreshToken,
         }),
-      ).toBe(false);
-    });
-  });
-
-  it('should return true when access token is invalid but refresh token is valid', async () => {
-    jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
-    expect(
-      await service.validate({
-        accessToken: invalidAccessToken,
-        refreshToken,
-      }),
-    ).toBe(true);
-  });
-
-  it('should return true when refresh token is invalid but access token is valid', async () => {
-    jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
-    expect(
-      await service.validate({
-        accessToken,
-        refreshToken: invalidRefreshToken,
-      }),
-    ).toBe(true);
-  });
-
-  it('should return false when access token is invalid payload', async () => {
-    jest.spyOn(fastify.redis, 'get').mockResolvedValue(refreshToken);
-    expect(
-      await service.validate({
-        accessToken: wrongPayloadAccessToken,
-        refreshToken,
-      }),
-    ).toBe(false);
-  });
-
-  describe('validateAndRefresh', () => {
-    it('should return new token pair when token pair is valid', async () => {
-      const tokenPair = { accessToken, refreshToken };
-      const newTokenPair = await service.validateAndRefresh(tokenPair);
-      expect(newTokenPair.accessToken).not.toBe(accessToken);
-      expect(newTokenPair.refreshToken).not.toBe(refreshToken);
-    });
-
-    it('should return new token pair when token pair is invalid but refresh token is valid', async () => {
-      const tokenPair = { accessToken: invalidAccessToken, refreshToken };
-      const newTokenPair = await service.validateAndRefresh(tokenPair);
-      expect(newTokenPair.accessToken).not.toBe(invalidAccessToken);
-      expect(newTokenPair.refreshToken).not.toBe(refreshToken);
-    });
-
-    it('should throw unauthorized error when access token is invalid payload', async () => {
-      const tokenPair = { accessToken: wrongPayloadAccessToken, refreshToken };
-      await expect(service.validateAndRefresh(tokenPair)).rejects.toThrow(
-        'Token is invalid error',
-      );
+      ).rejects.toThrow('Refresh token is invalid error');
     });
   });
 });
