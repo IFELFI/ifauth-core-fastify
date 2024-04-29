@@ -93,7 +93,7 @@ describe('TokenService', () => {
       return jwt.decode(token);
     });
     jest.spyOn(fastify.jwt, 'sign').mockImplementation((payload, options) => {
-      const token = jwt.sign(payload, secret, { expiresIn: options.expiresIn });
+      const token = jwt.sign(payload, secret, options);
       return token;
     });
 

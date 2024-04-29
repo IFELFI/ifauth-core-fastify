@@ -68,7 +68,7 @@ describe('AuthLocalService', () => {
     jest
       .spyOn(fastify.jwt, 'sign')
       .mockImplementation((payload, options) =>
-        jwt.sign(payload, secret, { expiresIn: options.expiresIn }),
+        jwt.sign(payload, secret, options),
       );
   });
 
