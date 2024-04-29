@@ -130,7 +130,6 @@ export class TokenService {
       result = true;
     } catch (error: any) {
       if (
-        error.code === 'FAST_JWT_EXPIRED' || // fastify-jwt
         error.name === 'TokenExpiredError' // jsonwebtoken
       ) {
         payload = this.#fastify.jwt.decode<AccessTokenPayload>(token);
