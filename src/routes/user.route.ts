@@ -1,25 +1,25 @@
 import { FastifyInstance } from 'fastify';
-import { AccessTokenPayload } from '../interfaces/token.interface';
 import { ReplyData } from '../interfaces/reply.interface';
 
 export default async function (fastify: FastifyInstance) {
   const basePath = '/user';
 
   fastify.get(`${basePath}/profile`, async (request, reply) => {
-    const { accessToken, refreshToken } =
-      await fastify.services.tokenService.parseTokenPair(request);
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    if (accessToken === undefined)
+      throw fastify.httpErrors.unauthorized('Access token is required');
 
-    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
-      accessToken,
-      refreshToken,
-    });
+    const { valid, payload } =
+      await fastify.services.tokenService.verifyAccessToken(accessToken);
 
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
-    if (decoded === null)
-      throw fastify.httpErrors.unauthorized('Token is invalid');
+    if (!valid && payload !== null)
+      throw fastify.httpErrors.unauthorized('Access token needs to be refreshed');
+
+    if (payload === null)
+      throw fastify.httpErrors.unauthorized('Access token needs to be refreshed');
 
     const profile = await fastify.services.userService.getProfile(
-      decoded.uuidKey,
+      payload.uuidKey,
     );
 
     const replyData: ReplyData = {
@@ -30,19 +30,21 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.get(`${basePath}/logout`, async (request, reply) => {
-    const { accessToken, refreshToken } =
-      await fastify.services.tokenService.parseTokenPair(request);
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    if (accessToken === undefined)
+      throw fastify.httpErrors.unauthorized('Access token is required');
 
-    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
-      accessToken,
-      refreshToken,
-    });
+    const { valid, payload } =
+      await fastify.services.tokenService.verifyAccessToken(accessToken);
 
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
-    if (decoded === null)
-      throw fastify.httpErrors.unauthorized('Token is invalid');
+    if (!valid && payload !== null)
+      throw fastify.httpErrors.unauthorized('Access token needs to be refreshed');
+
+    if (payload === null)
+      throw fastify.httpErrors.unauthorized('Access token is invalid error');
+
     const logoutResult = await fastify.services.userService.logout(
-      decoded.uuidKey,
+      payload.uuidKey,
     );
     if (logoutResult === false) {
       const replyData: ReplyData = {
@@ -58,19 +60,21 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.delete(`${basePath}`, async (request, reply) => {
-    const { accessToken, refreshToken } =
-      await fastify.services.tokenService.parseTokenPair(request);
+    const accessToken = request.headers.authorization?.split(' ')[1];
+    if (accessToken === undefined)
+      throw fastify.httpErrors.unauthorized('Access token is required');
 
-    const currentTokenPair = await fastify.services.tokenService.validateOrRefresh({
-      accessToken,
-      refreshToken,
-    });
+    const { valid, payload } =
+      await fastify.services.tokenService.verifyAccessToken(accessToken);
 
-    const decoded = fastify.jwt.decode<AccessTokenPayload>(currentTokenPair.accessToken);
-    if (decoded === null)
-      throw fastify.httpErrors.unauthorized('Token is invalid');
+    if (!valid && payload !== null)
+      throw fastify.httpErrors.unauthorized('Access token needs to be refreshed');
+
+    if (payload === null)
+      throw fastify.httpErrors.unauthorized('Access token is invalid error');
+
     const deleteResult = await fastify.services.userService.deleteUser(
-      decoded.uuidKey,
+      payload.uuidKey,
     );
     if (deleteResult === false) {
       const replyData: ReplyData = {
