@@ -5,7 +5,6 @@
     "@fastify/csrf-protection": "^6.4.1",
     "@fastify/env": "^4.3.0",
     "@fastify/helmet": "^11.1.1",
-    "@fastify/jwt": "^8.0.0",
     "@fastify/redis": "^6.1.1",
     "@fastify/sensible": "^5.6.0",
     "@fastify/type-provider-typebox": "^4.0.0",
@@ -14,8 +13,8 @@
     "@sinclair/typebox": "^0.32.25",
     "bcrypt": "^5.1.1",
     "fastify": "^4.26.2",
-    "typia": "^6.0.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "typia": "^6.0.3"
   },
   "name": "ifauth-api",
   "version": "1.0.0",
