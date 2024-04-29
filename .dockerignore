@@ -13,3 +13,7 @@
 
 # Ignore environment files
 /.env
+
+# Ignore test files
+/test
+*.spec.ts
