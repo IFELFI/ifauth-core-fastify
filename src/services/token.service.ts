@@ -108,7 +108,10 @@ export class TokenService {
       payload = this.#fastify.jwt.verify<AccessTokenPayload>(token);
       result = true;
     } catch (error: any) {
-      if (error.code === 'FAST_JWT_EXPIRED') {
+      if (
+        error.code === 'FAST_JWT_EXPIRED' || // fastify-jwt
+        error.name === 'TokenExpiredError' // jsonwebtoken
+      ) {
         payload = this.#fastify.jwt.decode<AccessTokenPayload>(token, {
           complete: false,
         });
@@ -204,7 +207,9 @@ export class TokenService {
       );
 
       if (verifyRefreshTokenResult === false)
-        throw this.#fastify.httpErrors.unauthorized('Refresh token is invalid error');
+        throw this.#fastify.httpErrors.unauthorized(
+          'Refresh token is invalid error',
+        );
 
       const newAccessTokenPayload: AccessTokenPayloadData = {
         uuidKey: verifyAccessTokenResult.payload.uuidKey,
@@ -218,7 +223,9 @@ export class TokenService {
     }
     // If access token is invalid, throw error
     else {
-      throw this.#fastify.httpErrors.unauthorized('Access token is invalid error');
+      throw this.#fastify.httpErrors.unauthorized(
+        'Access token is invalid error',
+      );
     }
   }
 
