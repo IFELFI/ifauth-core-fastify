@@ -1,11 +1,6 @@
 import '@fastify/jwt';
 import { tags } from 'typia';
 
-declare module '@fastify/jwt' {
-  interface FastifyJWT {
-    payload: AccessTokenPayloadData | null;
-  }
-}
 export interface AccessTokenPayloadData {
   uuidKey: string & tags.Format<'uuid'>;
   email: string & tags.Format<'email'>;
