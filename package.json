@@ -17,7 +17,7 @@
     "typia": "^6.0.3"
   },
   "name": "ifauth-api",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "main": "index.js",
   "devDependencies": {
     "@jest/globals": "^29.7.0",
