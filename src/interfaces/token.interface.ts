@@ -1,26 +1,23 @@
 import '@fastify/jwt';
+import { tags } from 'typia';
 
-declare module '@fastify/jwt' {
-  interface FastifyJWT {
-    payload: AccessTokenPayload | null;
-  }
-}
-export interface AccessTokenPayload {
-  uuidKey: string;
-  email: string;
-  nickname: string;
-  imageUrl: string | null;
+export interface AccessTokenPayloadData {
+  uuidKey: string & tags.Format<'uuid'>;
+  email: string & tags.Format<'email'>;
+  nickname: string & tags.MinLength<4> & tags.MaxLength<36>;
+  imageUrl: null | (string & tags.MaxLength<255>);
 }
 
-export function isAccessTokenPayload(
-  payload: any,
-): payload is AccessTokenPayload {
-  return (
-    typeof payload.uuidKey === 'string' &&
-    typeof payload.email === 'string' &&
-    typeof payload.nickname === 'string' &&
-    (typeof payload.imageUrl === 'string' || payload.imageUrl === null)
-  );
+export interface AccessTokenPayload extends AccessTokenPayloadData {
+  iat: number;
+  exp: number;
+  iss: string;
+}
+
+export interface RefreshTokenPayload {
+  iat: number;
+  exp: number;
+  iss: string;
 }
 
 export interface TokenPair {

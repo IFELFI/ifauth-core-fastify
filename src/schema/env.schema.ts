@@ -20,6 +20,7 @@ const schema = Type.Object({
   REDIS_URL: Type.String({ default: 'redis://localhost:6379' }),
   SALT: Type.String({ default: bcrypt.genSaltSync(10) }),
   AUTH_CODE_EXPIRATION: Type.Integer({ default: 60 * 3 }),
+  ISSUER: Type.String({ default: 'ifelfi.com' }),
 });
 
 type T = Static<typeof schema>;

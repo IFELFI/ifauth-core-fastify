@@ -19,13 +19,14 @@ import prismaPlugin from './plugins/prisma.plugin';
 import redis from '@fastify/redis';
 import sensible from '@fastify/sensible';
 import loadServicesPlugin from './plugins/loadServices.plugin';
-import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
+import jwt from './plugins/jwt.plugin'
 import underPressure from '@fastify/under-pressure';
 // Import schema
 import envSchema from './schema/env.schema';
+import typiaPlugin from './plugins/typia.plugin';
 
 // Define types
 export type FastifyTypebox = FastifyInstance<
@@ -70,6 +71,7 @@ async function build(opts: {}, data: any = process.env) {
   });
   await app.register(sensible);
   await app.register(loadServicesPlugin);
+  await app.register(typiaPlugin);
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
@@ -86,10 +88,13 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(jwt, {
     secret: app.config.TOKEN_SECRET,
     sign: {
-      iss: 'ifelfi.com',
+      issuer: app.config.ISSUER,
     },
     verify: {
-      allowedIss: 'ifelfi.com',
+      issuer: app.config.ISSUER,
+    },
+    decode: {
+      complete: false,
     },
   });
   await app.register(helmet, { global: true });
