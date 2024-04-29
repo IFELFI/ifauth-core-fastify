@@ -2,16 +2,27 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   AccessTokenPayloadData,
   AccessTokenPayload,
-  TokenPair,
   RefreshTokenPayload,
+  TokenPair,
 } from '../interfaces/token.interface';
 import { randomBytes } from 'crypto';
+import jwt from 'jsonwebtoken';
 
 export class TokenService {
   #fastify: FastifyInstance;
+  #signer: (payload: any, options: jwt.SignOptions) => string;
 
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
+    if (fastify.config.TOKEN_SECRET=== undefined) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+    this.#signer = (payload: any, options: jwt.SignOptions) => {
+      return jwt.sign(payload, this.#fastify.config.TOKEN_SECRET, {
+        ...options,
+        issuer: this.#fastify.config.ISSUER,
+      });
+    };
   }
 
   /**
@@ -27,6 +38,21 @@ export class TokenService {
         throw this.#fastify.httpErrors.internalServerError('Set code error');
       });
     return code;
+  }
+
+  private issueAccessToken(payload: AccessTokenPayloadData): string {
+    const accessToken = this.#signer(payload, {
+      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
+    });
+
+    return accessToken;
+  }
+
+  private issueRefreshToken(): string {
+    const refreshToken = this.#signer({}, {
+      expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION,
+    });
+    return refreshToken;
   }
 
   /**
@@ -52,13 +78,8 @@ export class TokenService {
       imageUrl: profile.image_url,
     };
 
-    const accessToken = this.#fastify.jwt.sign(AccessTokenPayload, {
-      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
-    });
-    const refreshToken = this.#fastify.jwt.sign(
-      {},
-      { expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION },
-    );
+    const accessToken = this.issueAccessToken(AccessTokenPayload);
+    const refreshToken = this.issueRefreshToken();
 
     this.#fastify.redis.set(searchUser.uuid_key, refreshToken);
 
@@ -169,15 +190,8 @@ export class TokenService {
     if (!isValidPayloadData) {
       throw new Error('Payload data is invalid');
     }
-    const newAccessToken: string = this.#fastify.jwt.sign(payloadData, {
-      expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
-    });
-    const newRefreshToken: string = this.#fastify.jwt.sign(
-      {},
-      {
-        expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION,
-      },
-    );
+    const newAccessToken = this.issueAccessToken(payloadData);
+    const newRefreshToken = this.issueRefreshToken();
     this.#fastify.redis.set(payloadData.uuidKey, newRefreshToken);
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }

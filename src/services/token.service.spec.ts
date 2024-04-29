@@ -78,6 +78,7 @@ describe('TokenService', () => {
       COOKIE_SECRET: 'secret',
       SALT: 'salt',
       AUTH_CODE_EXPIRATION: 60 * 3,
+      ISSUER: 'ifelfi.com',
     };
 
     /**
@@ -120,6 +121,34 @@ describe('TokenService', () => {
       const result = await service.issueAuthorizationCode(1);
       expect(result).toBeTruthy();
       expect(result).toHaveLength(32);
+    });
+  });
+
+  describe('issueAccessToken', () => {
+    it('should return access token', () => {
+      const result = service['issueAccessToken'](accessPayloadData);
+      const decoded = jwt.decode(result);
+      expect(result).toBeTruthy();
+      expect(decoded).toBeTruthy();
+      expect(decoded).toHaveProperty('uuidKey', accessPayloadData.uuidKey);
+      expect(decoded).toHaveProperty('email', accessPayloadData.email);
+      expect(decoded).toHaveProperty('nickname', accessPayloadData.nickname);
+      expect(decoded).toHaveProperty('imageUrl', accessPayloadData.imageUrl);
+      expect(decoded).toHaveProperty('exp');
+      expect(decoded).toHaveProperty('iat');
+      expect(decoded).toHaveProperty('iss');
+    });
+  });
+
+  describe('issueRefreshToken', () => {
+    it('should return refresh token', () => {
+      const result = service['issueRefreshToken']();
+      const decoded = jwt.decode(result);
+      expect(result).toBeTruthy();
+      expect(decoded).toBeTruthy();
+      expect(decoded).toHaveProperty('exp');
+      expect(decoded).toHaveProperty('iat');
+      expect(decoded).toHaveProperty('iss');
     });
   });
 
