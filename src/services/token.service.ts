@@ -133,9 +133,7 @@ export class TokenService {
         error.code === 'FAST_JWT_EXPIRED' || // fastify-jwt
         error.name === 'TokenExpiredError' // jsonwebtoken
       ) {
-        payload = this.#fastify.jwt.decode<AccessTokenPayload>(token, {
-          complete: false,
-        });
+        payload = this.#fastify.jwt.decode<AccessTokenPayload>(token);
       }
     }
     if (payload === null) {
@@ -159,9 +157,7 @@ export class TokenService {
   ): Promise<boolean> {
     let payload: RefreshTokenPayload;
     try {
-      payload = this.#fastify.jwt.verify<RefreshTokenPayload>(token, {
-        onlyCookie: true,
-      });
+      payload = this.#fastify.jwt.verify<RefreshTokenPayload>(token);
     } catch (error) {
       return false;
     }
