@@ -40,6 +40,11 @@ export class TokenService {
     return code;
   }
 
+  /**
+   * Issue access token
+   * @param payload Payload data to create access token
+   * @returns Access token
+   */
   private issueAccessToken(payload: AccessTokenPayloadData): string {
     const accessToken = this.#signer(payload, {
       expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
@@ -48,6 +53,10 @@ export class TokenService {
     return accessToken;
   }
 
+  /**
+   * Issue refresh token
+   * @returns Refresh token
+   */
   private issueRefreshToken(): string {
     const refreshToken = this.#signer({}, {
       expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION,
