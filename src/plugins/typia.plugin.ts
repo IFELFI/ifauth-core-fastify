@@ -1,4 +1,4 @@
-import { FastifyPluginAsync, FastifyPluginCallback } from 'fastify';
+import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import typia from 'typia';
 
