@@ -123,9 +123,6 @@ export class TokenService {
     const isValidPayload =
       this.#fastify.typia.equals<AccessTokenPayload>(payload);
     if (!isValidPayload) {
-      const result = this.#fastify.typia.validateEquals<AccessTokenPayload>(payload);
-      const message = result.errors.map((error) => `path: ${error.path} expected: ${error.expected} value: ${error.value}`).join(', ')
-      this.#fastify.log.error(message);
       return { result: false, payload: null };
     }
     return { result: result, payload };
