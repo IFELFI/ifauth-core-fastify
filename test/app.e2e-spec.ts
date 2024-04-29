@@ -4,8 +4,6 @@ import { FastifyInstance } from 'fastify';
 import {
   postgresContainer,
   redisContainer,
-  accessToken,
-  expiredAccessToken,
 } from './setup-e2e';
 
 describe('App', () => {
@@ -32,14 +30,6 @@ describe('App', () => {
 
   it('should have a config object', () => {
     expect(server.config).toBeDefined();
-  });
-
-  it('test user access token should be defined', () => {
-    expect(accessToken).toBeDefined();
-  });
-
-  it('expired access token should be defined', () => {
-    expect(expiredAccessToken).toBeDefined();
   });
 
   it('health check should return ok', async () => {

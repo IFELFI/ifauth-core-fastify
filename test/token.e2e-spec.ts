@@ -2,21 +2,17 @@ import { it, beforeAll, afterAll, expect, describe, beforeEach } from '@jest/glo
 import { FastifyInstance } from 'fastify';
 import build from '../src/app';
 import {
-  expiredAccessToken,
   postgresContainer,
   redisContainer,
-  refreshToken,
-  signer,
-  accessToken,
   redisClient,
-  expiredAccessTokenPayload,
-  expiredRefreshToken,
-  createDefaultLocalUser,
+  signer,
+  setupData,
 } from './setup-e2e';
 import { randomBytes } from 'crypto';
 
 describe('Token', () => {
   let server: FastifyInstance;
+  let data: Awaited<ReturnType<typeof setupData>>;
 
   beforeAll(async () => {
     server = await build(
@@ -37,8 +33,8 @@ describe('Token', () => {
     const code = randomBytes(16).toString('hex');
     
     beforeEach(async () => {
-      const result = await createDefaultLocalUser();
-      await redisClient.set(code, result.id);
+      data = await setupData();
+      await redisClient.set(code, data.user.user.id);
     });
 
     it('should issue token pair with authorization code', async () => {
@@ -72,10 +68,10 @@ describe('Token', () => {
         method: 'GET',
         url: '/token/refresh',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${data.accessToken.normal}`,
         },
         cookies: {
-          refresh: signer.sign(refreshToken),
+          refresh: signer.sign(data.refreshToken.normal),
         },
       });
       expect(response.statusCode).toBe(200);
@@ -84,15 +80,15 @@ describe('Token', () => {
     });
 
     it('should validate and refresh token if access token is expired but refresh token is valid', async () => {
-      await redisClient.set(expiredAccessTokenPayload.uuidKey, refreshToken);
+      await redisClient.set(data.user.user.uuid_key, data.refreshToken.normal);
       const response = await server.inject({
         method: 'GET',
         url: '/token/refresh',
         headers: {
-          Authorization: `Bearer ${expiredAccessToken}`,
+          Authorization: `Bearer ${data.accessToken.expired}`,
         },
         cookies: {
-          refresh: signer.sign(refreshToken),
+          refresh: signer.sign(data.refreshToken.normal),
         },
       });
       expect(response.statusCode).toBe(200);
@@ -102,17 +98,17 @@ describe('Token', () => {
 
     it('should not validate and refresh token if access token is expired and refresh token is expired', async () => {
       await redisClient.set(
-        expiredAccessTokenPayload.uuidKey,
-        expiredRefreshToken,
+        data.user.user.uuid_key,
+        data.refreshToken.expired,
       );
       const response = await server.inject({
         method: 'GET',
         url: '/token/refresh',
         headers: {
-          Authorization: `Bearer ${expiredAccessToken}`,
+          Authorization: `Bearer ${data.accessToken.expired}`,
         },
         cookies: {
-          refresh: signer.sign(expiredRefreshToken),
+          refresh: signer.sign(data.refreshToken.expired),
         },
       });
       expect(response.statusCode).toBe(401);
