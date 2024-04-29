@@ -38,6 +38,7 @@ describe('AuthLocalService', () => {
       COOKIE_SECRET: 'secret',
       SALT: 'salt',
       AUTH_CODE_EXPIRATION: 60 * 3,
+      ISSUER: 'ifelfi.com',
     };
 
     // mock redis methods
