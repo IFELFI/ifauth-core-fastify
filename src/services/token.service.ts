@@ -10,19 +10,12 @@ import jwt from 'jsonwebtoken';
 
 export class TokenService {
   #fastify: FastifyInstance;
-  #signer: (payload: any, options: jwt.SignOptions) => string;
 
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
-    if (fastify.config.TOKEN_SECRET=== undefined) {
+    if (fastify.config.TOKEN_SECRET === undefined) {
       throw new Error('JWT_SECRET is not defined');
     }
-    this.#signer = (payload: any, options: jwt.SignOptions) => {
-      return jwt.sign(payload, this.#fastify.config.TOKEN_SECRET, {
-        ...options,
-        issuer: this.#fastify.config.ISSUER,
-      });
-    };
   }
 
   /**
@@ -46,7 +39,7 @@ export class TokenService {
    * @returns Access token
    */
   private issueAccessToken(payload: AccessTokenPayloadData): string {
-    const accessToken = this.#signer(payload, {
+    const accessToken = this.#fastify.jwt.sign(payload, {
       expiresIn: this.#fastify.config.ACCESS_TOKEN_EXPIRATION,
     });
 
@@ -58,9 +51,12 @@ export class TokenService {
    * @returns Refresh token
    */
   private issueRefreshToken(): string {
-    const refreshToken = this.#signer({}, {
-      expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION,
-    });
+    const refreshToken = this.#fastify.jwt.sign(
+      {},
+      {
+        expiresIn: this.#fastify.config.REFRESH_TOKEN_EXPIRATION,
+      },
+    );
     return refreshToken;
   }
 
@@ -131,7 +127,7 @@ export class TokenService {
    */
   public async verifyAccessToken(
     token: string,
-  ): Promise<{ result: boolean; payload: AccessTokenPayload | null }> {
+  ): Promise<{ valid: boolean; payload: AccessTokenPayload | null }> {
     let payload: AccessTokenPayload | null = null;
     let result: boolean = false;
     try {
@@ -145,19 +141,21 @@ export class TokenService {
       }
     }
     if (payload === null) {
-      return { result: false, payload: null };
+      return { valid: false, payload: null };
     }
     const isValidPayload =
       this.#fastify.typia.equals<AccessTokenPayload>(payload);
     if (!isValidPayload) {
-      return { result: false, payload: null };
+      return { valid: false, payload: null };
     }
-    return { result: result, payload };
+    return { valid: result, payload };
   }
 
   /**
    * Verify refresh token
    * @param token Refresh token to verify
+   * @param uuidKey UUID key to verify
+   * @returns Verification result
    */
   public async verifyRefreshToken(
     token: string,
@@ -201,22 +199,27 @@ export class TokenService {
   }
 
   /**
-   * Validate and refresh token pair
+   * Verify token pair
    * @param tokenPair Pair of access and refresh tokens
-   * @returns Token pair with new access and refresh tokens
+   * @returns Verification result and payload data
    */
-  public async validateOrRefresh(tokenPair: TokenPair) {
+  public async verify(
+    tokenPair: TokenPair,
+  ): Promise<{ valid: boolean; payload: AccessTokenPayloadData }> {
     const { accessToken, refreshToken } = tokenPair;
 
     const verifyAccessTokenResult = await this.verifyAccessToken(accessToken);
 
     // If access token is valid, return token pair
-    if (verifyAccessTokenResult.result === true) {
-      return tokenPair;
+    if (
+      verifyAccessTokenResult.valid === true &&
+      verifyAccessTokenResult.payload !== null
+    ) {
+      return { valid: true, payload: verifyAccessTokenResult.payload };
     }
     // If access token is expired and refresh token is valid, refresh token pair
     else if (
-      verifyAccessTokenResult.result === false &&
+      verifyAccessTokenResult.valid === false &&
       verifyAccessTokenResult.payload !== null
     ) {
       const verifyRefreshTokenResult = await this.verifyRefreshToken(
@@ -236,8 +239,7 @@ export class TokenService {
         imageUrl: verifyAccessTokenResult.payload.imageUrl,
       };
 
-      const refreshedPair = await this.refresh(newAccessTokenPayload);
-      return refreshedPair;
+      return { valid: false, payload: newAccessTokenPayload };
     }
     // If access token is invalid, throw error
     else {
