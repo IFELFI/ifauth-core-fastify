@@ -28,10 +28,35 @@ export default async function (fastify: FastifyTypebox) {
     },
   );
 
+  fastify.get(`${basePath}/valid`, async (request, reply) => {
+    const accessToken = request.headers.authorization?.split(' ')[1];
+
+    if (accessToken === undefined) {
+      throw fastify.httpErrors.unauthorized('Access token is required');
+    }
+
+    const result =
+      await fastify.services.tokenService.verifyAccessToken(accessToken);
+
+    if (result.valid === true) {
+      const replyData: ReplyData = {
+        message: 'Token is valid',
+      };
+      reply.code(200).send(replyData);
+    } else if (result.valid === false && result.payload !== null) {
+      const replyData: ReplyData = {
+        message: 'Token is expired',
+      };
+      reply.code(401).send(replyData);
+    } else {
+      throw fastify.httpErrors.unauthorized('Access token is invalid');
+    }
+  });
+
   fastify.get(`${basePath}/refresh`, async (request, reply) => {
     let { accessToken, refreshToken } =
       await fastify.services.tokenService.parseTokenPair(request);
-    
+
     const { valid, payload } = await fastify.services.tokenService.verify({
       accessToken,
       refreshToken,
