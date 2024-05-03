@@ -6,7 +6,6 @@ import {
   TokenPair,
 } from '../interfaces/token.interface';
 import { randomBytes } from 'crypto';
-import jwt from 'jsonwebtoken';
 
 export class TokenService {
   #fastify: FastifyInstance;
