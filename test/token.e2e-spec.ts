@@ -62,6 +62,44 @@ describe('Token', () => {
     });
   });
 
+  describe('[GET] /token/valid', () => {
+    it('should validate token if access token is valid', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/token/valid',
+        headers: {
+          Authorization: `Bearer ${data.accessToken.normal}`,
+        },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json().message).toBe('Token is valid');
+    });
+
+    it('should not validate token if access token is expired', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/token/valid',
+        headers: {
+          Authorization: `Bearer ${data.accessToken.expired}`,
+        },
+      });
+      expect(response.statusCode).toBe(401);
+      expect(response.json().message).toBe('Token is expired');
+    });
+
+    it('should not validate token if access token is invalid', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/token/valid',
+        headers: {
+          Authorization: 'Bearer invalid_token',
+        },
+      });
+      expect(response.statusCode).toBe(401);
+      expect(response.json().message).toBe('Access token is invalid');
+    });
+  });
+
   describe('[GET] /token/refresh', () => {
     it('should validate and refresh token if access token is valid', async () => {
       const response = await server.inject({
