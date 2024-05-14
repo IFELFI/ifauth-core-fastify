@@ -14,6 +14,7 @@ export class UserService {
    * @returns user profile
    */
   public async getProfile(uuidKey: string): Promise<{
+    uuidKey: string;
     email: string;
     nickname: string;
     imageUrl: string | null;
@@ -61,6 +62,7 @@ export class UserService {
     }
 
     return {
+      uuidKey: user.uuid_key,
       email: user.email,
       nickname: profile.nickname,
       imageUrl: profile.image_url,
