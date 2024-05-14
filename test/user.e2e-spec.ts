@@ -46,6 +46,7 @@ describe('User', () => {
 
   describe('[GET] /user/profile', () => {
     let expectedProfile: {
+      uuidKey: string;
       email: string;
       nickname: string;
       imageUrl: string | null;
@@ -55,6 +56,7 @@ describe('User', () => {
     };
     beforeEach(() => {
       expectedProfile = {
+        uuidKey: data.user.user.uuid_key,
         email: data.user.user.email,
         nickname: data.user.profile.nickname,
         imageUrl: data.user.profile.image_url,

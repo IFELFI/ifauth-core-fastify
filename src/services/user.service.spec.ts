@@ -52,6 +52,7 @@ describe('UserService', () => {
       jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(profile);
       jest.spyOn(fastify.prisma.provider, 'findUnique').mockResolvedValue(provider);
       expect(await service.getProfile(user.uuid_key)).toEqual({
+        uuidKey: user.uuid_key,
         email: user.email,
         nickname: profile.nickname,
         imageUrl: profile.image_url,
