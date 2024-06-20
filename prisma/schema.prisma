@@ -1,7 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  binaryTargets   = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -53,14 +53,27 @@ model profile {
 }
 
 model users {
-  id       Int       @id(map: "pk_users") @default(autoincrement())
-  uuid_key String    @unique(map: "uni_uuid_key") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email    String    @unique(map: "uni_email") @db.VarChar(256)
-  password password?
-  provider provider?
-  profile  profile?
+  id              Int               @id(map: "pk_users") @default(autoincrement())
+  uuid_key        String            @unique(map: "uni_uuid_key") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String            @unique(map: "uni_email") @db.VarChar(256)
+  auto_login_code auto_login_code[]
+  password        password?
+  provider        provider?
+  profile         profile?
 
   @@schema("member")
+}
+
+model auto_login_code {
+  id             BigInt   @id(map: "pk_regen_code") @default(autoincrement())
+  user_id        Int
+  code           String   @unique(map: "uni_regen_code") @db.VarChar(256)
+  target_address String   @db.VarChar(256)
+  create_date    DateTime @default(now()) @db.Timestamptz(6)
+  expire_date    DateTime @db.Timestamptz(6)
+  users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_id")
+
+  @@schema("auth")
 }
 
 enum provider_type {
