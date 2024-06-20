@@ -13,6 +13,7 @@ export const localLoginSchema = {
   body: Type.Object({
     email: Type.String({ format: 'email' }),
     password: Type.String({ minLength: 8, maxLength: 256 }),
+    autoLogin: Type.Boolean({ default: false }),
   }),
 };
 

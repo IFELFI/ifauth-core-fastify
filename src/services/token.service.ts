@@ -253,7 +253,7 @@ export class TokenService {
    * @param request Fastify request
    * @returns Token pair
    */
-  public async parseTokenPair(request: FastifyRequest): Promise<TokenPair> {
+  public parseTokenPair(request: FastifyRequest): TokenPair {
     const accessToken = request.headers.authorization?.split(' ')[1];
     const unsignedRefreshCookie = request.unsignCookie(
       request.cookies.refresh ?? '',

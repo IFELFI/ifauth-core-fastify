@@ -1,3 +1,4 @@
+import { auto_login_code } from '@prisma/client';
 import { afterAll, afterEach, beforeAll, expect } from '@jest/globals';
 import {
   PostgreSqlContainer,
@@ -59,6 +60,7 @@ afterEach(async () => {
   await postgresClient.query('DELETE FROM "auth"."password"');
   await postgresClient.query('DELETE FROM "auth"."provider"');
   await postgresClient.query('DELETE FROM "auth"."social_info"');
+  await postgresClient.query('DELETE FROM "auth"."auto_login_code"');
   await redisClient.flushAll();
 });
 
@@ -89,6 +91,7 @@ export const setupData = async () => {
     provider: provider;
     salt: string;
     realPassword: string;
+    autoLoginCode: auto_login_code;
   }> => {
     const salt = bcrypt.genSaltSync(10);
     const userData = {
@@ -118,6 +121,9 @@ export const setupData = async () => {
     const provider = await postgresClient.query(
       `INSERT INTO "auth"."provider" (user_id, provider) VALUES (${user.rows[0].id}, '${providerData.provider}') RETURNING *;`,
     );
+    const autoLoginCode = await postgresClient.query(
+      `INSERT INTO "auth"."auto_login_code" (user_id, code, expire_date, target_address) VALUES (${user.rows[0].id}, 'code', NOW() + INTERVAL '1 day', 'address') RETURNING *;`,
+    );
 
     return {
       user: user.rows[0],
@@ -126,6 +132,7 @@ export const setupData = async () => {
       provider: provider.rows[0],
       salt: salt,
       realPassword: pass,
+      autoLoginCode: autoLoginCode.rows[0],
     };
   };
 

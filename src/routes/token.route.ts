@@ -55,7 +55,7 @@ export default async function (fastify: FastifyTypebox) {
 
   fastify.get(`${basePath}/refresh`, async (request, reply) => {
     let { accessToken, refreshToken } =
-      await fastify.services.tokenService.parseTokenPair(request);
+      fastify.services.tokenService.parseTokenPair(request);
 
     const { valid, payload } = await fastify.services.tokenService.verify({
       accessToken,

@@ -96,6 +96,9 @@ CREATE UNIQUE INDEX "uni_email" ON "member"."users"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "uni_regen_code" ON "auth"."auto_login_code"("code");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "uni_user_addr" ON "auth"."auto_login_code"("user_id", "target_address");
+
 -- AddForeignKey
 ALTER TABLE "auth"."password" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

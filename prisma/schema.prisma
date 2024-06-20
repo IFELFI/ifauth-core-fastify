@@ -73,6 +73,7 @@ model auto_login_code {
   expire_date    DateTime @db.Timestamptz(6)
   users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_id")
 
+  @@unique([user_id, target_address], map: "uni_user_addr")
   @@schema("auth")
 }
 
