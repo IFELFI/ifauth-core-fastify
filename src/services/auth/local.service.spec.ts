@@ -215,7 +215,7 @@ describe('AuthLocalService', () => {
       const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
-        autoLogin: false,
+        auto: false,
       };
 
       const result = await service.login(loginData);
@@ -227,7 +227,7 @@ describe('AuthLocalService', () => {
       const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
-        autoLogin: false,
+        auto: false,
       };
 
       jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
@@ -241,7 +241,7 @@ describe('AuthLocalService', () => {
       const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
-        autoLogin: false,
+        auto: false,
       };
 
       jest
@@ -258,7 +258,7 @@ describe('AuthLocalService', () => {
       const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
-        autoLogin: false,
+        auto: false,
       };
       jest
         .spyOn(fastify.prisma.password, 'findUnique')
@@ -273,7 +273,7 @@ describe('AuthLocalService', () => {
       const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
-        autoLogin: false,
+        auto: false,
       };
 
       jest
