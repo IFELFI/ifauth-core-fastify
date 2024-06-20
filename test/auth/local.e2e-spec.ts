@@ -117,6 +117,23 @@ describe('Auth local', () => {
       expect(body).toHaveProperty('code');
     });
 
+    it('should return 200 with autoAuthCode when login with proper data and auto=true', async () => {
+      const data = await setupData();
+      const response = await server.inject({
+        method: 'POST',
+        url: '/auth/local/login',
+        payload: {
+          email: data.user.user.email,
+          password: data.user.realPassword,
+          auto: true,
+        },
+      });
+      const body = JSON.parse(response.body);
+      expect(response.statusCode).toBe(200);
+      expect(body).toHaveProperty('code');
+      expect(body).toHaveProperty('autoAuthCode');
+    });
+
     it('should return 400 when login with invalid data', async () => {
       const data = await setupData();
       const response = await server.inject({

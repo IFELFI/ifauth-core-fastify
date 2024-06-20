@@ -31,6 +31,9 @@ export class AutoLoginService {
   public async issueCode(code: string, address: string): Promise<string> {
     const id = await this.#fastify.redis
       .get(code)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Get code error');
+      })
       .then(async (result) => {
         if (!result) throw this.#fastify.httpErrors.notFound('Code not found');
         if (result.match(/^[0-9]+$/) === null)
@@ -42,9 +45,6 @@ export class AutoLoginService {
         });
         return parseInt(result);
       })
-      .catch(() => {
-        throw this.#fastify.httpErrors.internalServerError('Get code error');
-      });
 
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const code = randomBytes(16).toString('hex');

@@ -8,6 +8,7 @@ import {
   setupData,
   signer,
 } from '../setup-e2e';
+import { randomBytes } from 'crypto';
 
 describe('Auth auto', () => {
   let server: FastifyInstance;
@@ -42,6 +43,30 @@ describe('Auth auto', () => {
         },
         cookies: {
           autoLogin: signer.sign('code'),
+        },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toBeDefined();
+    });
+  });
+
+  describe('[GET] /auth/auto/issue', () => {
+    const code = randomBytes(16).toString('hex');
+
+    beforeEach(async () => {
+      data = await setupData();
+      await redisClient.set(code, data.user.user.id);
+    });
+
+    it('should return 200 and a new auto login code', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/auth/auto/issue',
+        query: {
+          code: code,
+        },
+        headers: {
+          'x-forwarded-for': 'address',
         },
       });
       expect(response.statusCode).toBe(200);

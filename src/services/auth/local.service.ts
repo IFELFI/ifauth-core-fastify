@@ -16,27 +16,35 @@ export class AuthLocalService {
    * @param signupData Signup data
    * @returns User id
    */
-  public async signup(
-    signupData: Static<typeof localSignupSchema.body>,
-  ): Promise<number> {
+  public async signup({
+    email,
+    nickname,
+    password,
+    imageUrl,
+  }: {
+    email: string;
+    nickname?: string;
+    password: string;
+    imageUrl?: string;
+  }): Promise<number> {
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const searchUser = await tx.users.findUnique({
-        where: { email: signupData.email },
+        where: { email: email },
       });
       if (searchUser) {
         throw this.#fastify.httpErrors.conflict('Email already exists');
       }
       try {
-        const nickname = signupData.nickname || signupData.email.split('@')[0];
-        const hashedPassword = await bcrypt.hash(signupData.password, 10);
+        const modifiedNickname = nickname || email.split('@')[0];
+        const hashedPassword = await bcrypt.hash(password, 10);
         const createUser = await tx.users.create({
-          data: { email: signupData.email },
+          data: { email: email },
         });
         await tx.profile.create({
           data: {
             users: { connect: { id: createUser.id } },
-            nickname: nickname,
-            image_url: signupData.imageUrl || null,
+            nickname: modifiedNickname,
+            image_url: imageUrl || null,
           },
         });
         await tx.password.create({
@@ -63,15 +71,19 @@ export class AuthLocalService {
 
   /**
    * Login
-   * @param loginData Login data
+   * @param data Login data
    * @returns User id
    */
-  public async login(
-    loginData: Static<typeof localLoginSchema.body>,
-  ): Promise<number> {
+  public async login({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }): Promise<number> {
     const prisma = this.#fastify.prisma;
     const searchUser = await prisma.users.findUnique({
-      where: { email: loginData.email },
+      where: { email: email },
     });
     if (!searchUser) {
       throw this.#fastify.httpErrors.unauthorized('Invalid email or password');
@@ -92,7 +104,7 @@ export class AuthLocalService {
     }
     // Compare password
     const comparePassword = await bcrypt.compare(
-      loginData.password,
+      password,
       searchPassword.password,
     );
     if (!comparePassword) {

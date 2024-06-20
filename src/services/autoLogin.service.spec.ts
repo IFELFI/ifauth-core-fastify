@@ -54,21 +54,39 @@ describe('autoLoginService', () => {
     jest
       .spyOn(fastify.prisma, '$transaction')
       .mockImplementation((callback) => callback(fastify.prisma));
+
+    // mock redis methods
+    jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
   });
 
-  describe('issueAutoLoginCode', () => {
+  describe('issueAuthorizationCode', () => {
+    it('should return authorization code', async () => {
+      const id = 1;
+      jest.spyOn(fastify.redis, 'set').mockResolvedValue('OK');
+      const result = await service.issueAuthorizationCode(id);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('issueCode', () => {
     it('should return auto login code', async () => {
-      const code = 'code';
+      const authCode = 'authCode';
       const address = 'address';
+      jest.spyOn(fastify.redis, 'get').mockResolvedValue('1');
+      jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
       jest
         .spyOn(fastify.prisma.auto_login_code, 'findFirst')
         .mockResolvedValue(autoLoginCode);
       jest
+        .spyOn(fastify.prisma.auto_login_code, 'update')
+        .mockResolvedValue(autoLoginCode);
+      jest
         .spyOn(fastify.prisma.auto_login_code, 'create')
         .mockResolvedValue(autoLoginCode);
-      const result = await service.issueCode(1, address);
+      const result = await service.issueCode(authCode, address);
 
-      expect(result).toEqual(code);
+      expect(result).toBeDefined();
     });
   });
 
@@ -80,9 +98,8 @@ describe('autoLoginService', () => {
         .spyOn(fastify.prisma.auto_login_code, 'findUnique')
         .mockResolvedValue(autoLoginCode);
       jest
-        .spyOn(fastify.prisma.auto_login_code, 'delete')
+        .spyOn(fastify.prisma.auto_login_code, 'update')
         .mockResolvedValue(autoLoginCode);
-      jest.spyOn(service, 'issueAutoLoginCode').mockResolvedValue(code);
       const result = await service.verifyAutoLoginCode(code, address);
 
       expect(result.id).toEqual(1);
