@@ -69,51 +69,44 @@ export class AuthLocalService {
   public async login(
     loginData: Static<typeof localLoginSchema.body>,
   ): Promise<number> {
-    return await this.#fastify.prisma.$transaction(async (tx) => {
-      const searchUser = await tx.users.findUnique({
-        where: { email: loginData.email },
-      });
-      if (!searchUser) {
-        throw this.#fastify.httpErrors.unauthorized(
-          'Invalid email or password',
-        );
-      }
-      const provider = await tx.provider.findUnique({
-        where: { user_id: searchUser.id },
-      });
-      if (!provider || provider.provider !== provider_type.local) {
-        throw this.#fastify.httpErrors.badRequest(
-          'This email is registered with a different provider',
-        );
-      }
-      const searchPassword = await tx.password.findUnique({
-        where: { user_id: searchUser.id },
-      });
-      if (!searchPassword) {
-        throw this.#fastify.httpErrors.unauthorized(
-          'Invalid email or password',
-        );
-      }
-      // Compare password
-      const comparePassword = await bcrypt.compare(
-        loginData.password,
-        searchPassword.password,
-      );
-      if (!comparePassword) {
-        throw this.#fastify.httpErrors.unauthorized(
-          'Invalid email or password',
-        );
-      }
-      const profile = await tx.profile.findUnique({
-        where: { user_id: searchUser.id },
-      });
-      if (!profile) {
-        throw this.#fastify.httpErrors.internalServerError(
-          'Error finding user profile',
-        );
-      }
-
-      return searchUser.id;
+    const prisma = this.#fastify.prisma;
+    const searchUser = await prisma.users.findUnique({
+      where: { email: loginData.email },
     });
+    if (!searchUser) {
+      throw this.#fastify.httpErrors.unauthorized('Invalid email or password');
+    }
+    const provider = await prisma.provider.findUnique({
+      where: { user_id: searchUser.id },
+    });
+    if (!provider || provider.provider !== provider_type.local) {
+      throw this.#fastify.httpErrors.badRequest(
+        'This email is registered with a different provider',
+      );
+    }
+    const searchPassword = await prisma.password.findUnique({
+      where: { user_id: searchUser.id },
+    });
+    if (!searchPassword) {
+      throw this.#fastify.httpErrors.unauthorized('Invalid email or password');
+    }
+    // Compare password
+    const comparePassword = await bcrypt.compare(
+      loginData.password,
+      searchPassword.password,
+    );
+    if (!comparePassword) {
+      throw this.#fastify.httpErrors.unauthorized('Invalid email or password');
+    }
+    const profile = await prisma.profile.findUnique({
+      where: { user_id: searchUser.id },
+    });
+    if (!profile) {
+      throw this.#fastify.httpErrors.internalServerError(
+        'Error finding user profile',
+      );
+    }
+
+    return searchUser.id;
   }
 }

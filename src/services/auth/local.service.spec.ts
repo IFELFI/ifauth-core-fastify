@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { it, describe, beforeAll, jest, expect } from '@jest/globals';
-import { localSignupSchema } from '../../schema/auth.schema';
+import { localLoginSchema, localSignupSchema } from '../../schema/auth.schema';
 import { Static } from '@sinclair/typebox';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { FastifyInstance } from 'fastify';
@@ -32,12 +32,13 @@ describe('AuthLocalService', () => {
       PORT: 3000,
       ACCESS_TOKEN_EXPIRATION: 60 * 5,
       REFRESH_TOKEN_EXPIRATION: 60 * 60 * 24 * 3,
+      AUTH_CODE_EXPIRATION: 60 * 3,
+      AUTO_LOGIN_CODE_EXPIRATION: 7 * 24 * 60 * 60,
       DATABASE_URL: 'postgres://localhost:5432',
       REDIS_URL: 'redis://localhost:6379',
       TOKEN_SECRET: 'secret',
       COOKIE_SECRET: 'secret',
       SALT: 'salt',
-      AUTH_CODE_EXPIRATION: 60 * 3,
       ISSUER: 'ifelfi.com',
     };
 
@@ -211,9 +212,10 @@ describe('AuthLocalService', () => {
     });
 
     it('should return token pair with access and refresh tokens', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
+      const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
+        autoLogin: false,
       };
 
       const result = await service.login(loginData);
@@ -222,9 +224,10 @@ describe('AuthLocalService', () => {
     });
 
     it('should throw unauthorized error when user not found', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
+      const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
+        autoLogin: false,
       };
 
       jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
@@ -235,9 +238,10 @@ describe('AuthLocalService', () => {
     });
 
     it('should throw unauthorized error when password not found', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
+      const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
+        autoLogin: false,
       };
 
       jest
@@ -251,9 +255,10 @@ describe('AuthLocalService', () => {
     });
 
     it('should throw unauthorized error when password is incorrect', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
+      const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
+        autoLogin: false,
       };
       jest
         .spyOn(fastify.prisma.password, 'findUnique')
@@ -265,9 +270,10 @@ describe('AuthLocalService', () => {
     });
 
     it('should throw unauthorized error when provider is not local', async () => {
-      const loginData: Static<typeof localSignupSchema.body> = {
+      const loginData: Static<typeof localLoginSchema.body> = {
         email: email,
         password: password,
+        autoLogin: false,
       };
 
       jest

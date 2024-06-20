@@ -87,12 +87,13 @@ describe('TokenService', () => {
       PORT: 3000,
       ACCESS_TOKEN_EXPIRATION: 60 * 5,
       REFRESH_TOKEN_EXPIRATION: 60 * 60 * 24 * 3,
+      AUTH_CODE_EXPIRATION: 60 * 3,
+      AUTO_LOGIN_CODE_EXPIRATION: 60 * 60 * 24 * 7,
       DATABASE_URL: 'postgres://localhost:5432',
       REDIS_URL: 'redis://localhost:6379',
       TOKEN_SECRET: 'secret',
       COOKIE_SECRET: 'secret',
       SALT: 'salt',
-      AUTH_CODE_EXPIRATION: 60 * 3,
       ISSUER: 'ifelfi.com',
     };
 
