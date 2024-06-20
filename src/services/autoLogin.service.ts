@@ -51,12 +51,15 @@ export class AutoLoginService {
    * Verify auto login code
    * @param code Auto login code
    * @param address User address
-   * @returns New auto login code
+   * @returns New auto login code and user id
    */
   public async verifyAutoLoginCode(
     code: string,
     address: string,
-  ): Promise<string> {
+  ): Promise<{
+    id: number;
+    code: string;
+  }> {
     const prisma = this.#fastify.prisma;
 
     const storedCode = await prisma.auto_login_code.findUnique({
@@ -73,7 +76,8 @@ export class AutoLoginService {
     if (storedCode.expire_date < new Date()) {
       throw this.#fastify.httpErrors.badRequest('Expired code');
     }
-    return this.issueAutoLoginCode(storedCode.user_id, address);
+    const newAutoLoginCode = await this.issueAutoLoginCode(storedCode.user_id, address);
+    return {id: storedCode.user_id, code: newAutoLoginCode};
   }
 
   /**
