@@ -42,22 +42,18 @@ export default async function (fastify: FastifyTypebox) {
       const code =
         await fastify.services.tokenService.issueAuthorizationCode(userId);
 
-      if (request.body.autoLogin) {
-        const addr =
-          request.headers['x-forwarded-for']?.toString() || request.ip;
-        fastify.log.info(`Auto login request from ${addr}`);
-        const autoLoginCode =
-          await fastify.services.autoLoginService.issueAutoLoginCode(
-            userId,
-            addr,
-          );
-        reply.setCookie('autoLogin', autoLoginCode);
-      }
-
-      const replyData: AuthReplyData = {
+      let replyData: AuthReplyData = {
         message: 'User logged in',
         code: code,
       };
+      if (request.body.auto) {
+        const autoAuthCode =
+          await fastify.services.autoLoginService.issueAuthorizationCode(
+            userId,
+          );
+        replyData.autoAuthCode = autoAuthCode;
+      }
+
       reply.code(200).send(replyData);
     },
   );

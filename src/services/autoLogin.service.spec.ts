@@ -1,10 +1,10 @@
-import { beforeAll, describe, expect, it, jest } from "@jest/globals";
-import { AutoLoginService } from "./autoLogin.service";
-import { DeepMockProxy, mockDeep } from "jest-mock-extended";
-import { FastifyInstance } from "fastify";
-import { httpErrors } from "@fastify/sensible";
-import { beforeEach } from "node:test";
-import { auto_login_code } from "@prisma/client";
+import { beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { AutoLoginService } from './autoLogin.service';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { FastifyInstance } from 'fastify';
+import { httpErrors } from '@fastify/sensible';
+import { beforeEach } from 'node:test';
+import { auto_login_code } from '@prisma/client';
 
 describe('autoLoginService', () => {
   let service: AutoLoginService;
@@ -66,7 +66,7 @@ describe('autoLoginService', () => {
       jest
         .spyOn(fastify.prisma.auto_login_code, 'create')
         .mockResolvedValue(autoLoginCode);
-      const result = await service.issueAutoLoginCode(1, address);
+      const result = await service.issueCode(1, address);
 
       expect(result).toEqual(code);
     });
@@ -82,9 +82,7 @@ describe('autoLoginService', () => {
       jest
         .spyOn(fastify.prisma.auto_login_code, 'delete')
         .mockResolvedValue(autoLoginCode);
-      jest
-        .spyOn(service, 'issueAutoLoginCode')
-        .mockResolvedValue(code);
+      jest.spyOn(service, 'issueAutoLoginCode').mockResolvedValue(code);
       const result = await service.verifyAutoLoginCode(code, address);
 
       expect(result.id).toEqual(1);

@@ -7,43 +7,81 @@ export class AutoLoginService {
   constructor(fastify: FastifyInstance) {
     this.#fastify = fastify;
   }
+  /**
+   * Issue authorization code for auto login code
+   * @param id User id
+   * @returns Authorization code
+   */
+  public async issueAuthorizationCode(id: number): Promise<string> {
+    const code = randomBytes(16).toString('hex');
+    await this.#fastify.redis
+      .set(code, id.toString(), 'EX', this.#fastify.config.AUTH_CODE_EXPIRATION)
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Set code error');
+      });
+    return code;
+  }
 
   /**
    * Issue auto login code
-   * @param id user id
+   * @param code Authorization code for auto login
    * @param address user address
    * @returns Auto login code
    */
-  public async issueAutoLoginCode(
-    id: number,
-    address: string,
-  ): Promise<string> {
+  public async issueCode(code: string, address: string): Promise<string> {
+    const id = await this.#fastify.redis
+      .get(code)
+      .then(async (result) => {
+        if (!result) throw this.#fastify.httpErrors.notFound('Code not found');
+        if (result.match(/^[0-9]+$/) === null)
+          throw this.#fastify.httpErrors.internalServerError('Code error');
+        await this.#fastify.redis.del(code).catch(() => {
+          throw this.#fastify.httpErrors.internalServerError(
+            'Delete code error',
+          );
+        });
+        return parseInt(result);
+      })
+      .catch(() => {
+        throw this.#fastify.httpErrors.internalServerError('Get code error');
+      });
+
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const code = randomBytes(16).toString('hex');
       const existingCode = await tx.auto_login_code.findFirst({
         where: {
           user_id: id,
           target_address: address,
-        }
+        },
       });
       if (existingCode) {
-        await tx.auto_login_code.delete({
+        await tx.auto_login_code.update({
           where: {
             id: existingCode.id,
           },
+          data: {
+            code: code,
+            create_date: new Date(),
+            expire_date: new Date(
+              Date.now() +
+                this.#fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
+            ),
+          },
+        });
+      } else {
+        await tx.auto_login_code.create({
+          data: {
+            users: { connect: { id: id } },
+            code: code,
+            target_address: address,
+            expire_date: new Date(
+              Date.now() +
+                this.#fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
+            ),
+          },
         });
       }
-      const result = await tx.auto_login_code.create({
-        data: {
-          users: { connect: { id: id } },
-          code: code,
-          target_address: address,
-          expire_date: new Date(
-            Date.now() + this.#fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
-          ),
-        },
-      });
-      return result.code;
+      return code;
     });
   }
 
@@ -76,8 +114,20 @@ export class AutoLoginService {
     if (storedCode.expire_date < new Date()) {
       throw this.#fastify.httpErrors.badRequest('Expired code');
     }
-    const newAutoLoginCode = await this.issueAutoLoginCode(storedCode.user_id, address);
-    return {id: storedCode.user_id, code: newAutoLoginCode};
+    const newCode = randomBytes(16).toString('hex');
+    await prisma.auto_login_code.update({
+      where: {
+        id: storedCode.id,
+      },
+      data: {
+        code: newCode,
+        create_date: new Date(),
+        expire_date: new Date(
+          Date.now() + this.#fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
+        ),
+      },
+    });
+    return { id: storedCode.user_id, code: code };
   }
 
   /**
@@ -86,9 +136,7 @@ export class AutoLoginService {
    * @returns Auto login code
    */
   public parseAutoLoginCode(request: FastifyRequest): string {
-    const unsignedCode = request.unsignCookie(
-      request.cookies.autoLogin ?? '',
-    );
+    const unsignedCode = request.unsignCookie(request.cookies.autoLogin ?? '');
     const autoLoginCode = unsignedCode.value;
 
     if (!autoLoginCode) {
