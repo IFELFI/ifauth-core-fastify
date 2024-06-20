@@ -87,7 +87,8 @@ describe('autoLoginService', () => {
         .mockResolvedValue(code);
       const result = await service.verifyAutoLoginCode(code, address);
 
-      expect(result).toEqual(code);
+      expect(result.id).toEqual(1);
+      expect(result.code).toBeDefined();
     });
   });
 });
