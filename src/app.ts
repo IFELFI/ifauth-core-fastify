@@ -102,7 +102,7 @@ async function build(opts: {}, data: any = process.env) {
     origin: ['http://localhost:5173', 'https://ifelfi.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie'],
     exposedHeaders: ['Authorization'],
   });
 
