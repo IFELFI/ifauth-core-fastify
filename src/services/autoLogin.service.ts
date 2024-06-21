@@ -47,7 +47,7 @@ export class AutoLoginService {
       })
 
     return await this.#fastify.prisma.$transaction(async (tx) => {
-      const code = randomBytes(16).toString('hex');
+      const code = randomBytes(64).toString('hex');
       const existingCode = await tx.auto_login_code.findFirst({
         where: {
           user_id: id,
