@@ -33,6 +33,7 @@ async function run() {
         },
       },
     },
+    trustProxy: true,
   });
 
   server.register(fastifyUnderPressure, {
