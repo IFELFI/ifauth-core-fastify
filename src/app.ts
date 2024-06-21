@@ -75,25 +75,15 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
-      // domain: '.ifelfi.com',
-      // sameSite: 'lax',
-      // path: '/',
-      // secure: true,
-      // httpOnly: true,
-      // maxAge: 60 * 60 * 24 * 7,
-      // expires: new Date(Date.now() + 60 * 60 * 24 * 7),
-      // signed: true,
-    },
-    setOptions: {
       domain: '.ifelfi.com',
-      sameSite: 'lax',
+      sameSite: 'none',
       path: '/',
       secure: true,
       httpOnly: true,
       maxAge: 60 * 60 * 24 * 7,
       expires: new Date(Date.now() + 60 * 60 * 24 * 7),
       signed: true,
-    },
+    }
   } as FastifyCookieOptions);
   await app.register(jwt, {
     secret: app.config.TOKEN_SECRET,
@@ -109,12 +99,7 @@ async function build(opts: {}, data: any = process.env) {
   });
   await app.register(helmet, { global: true });
   await app.register(cors, {
-    origin: [
-      'http://localhost:5173',
-      'https://ifelfi.com',
-      'https://www.ifelfi.com',
-      'http://ifauth-core:10920',
-    ],
+    origin: ['http://localhost:5173', 'https://ifelfi.com', 'https://www.ifelfi.com', 'http://ifauth-core:10920'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
