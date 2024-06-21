@@ -103,7 +103,7 @@ async function build(opts: {}, data: any = process.env) {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie'],
-    exposedHeaders: ['Authorization'],
+    exposedHeaders: ['Authorization', 'Set-Cookie', 'Cookie'],
   });
 
   // Register routes
