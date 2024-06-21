@@ -138,7 +138,8 @@ export class AutoLoginService {
   public parseAutoLoginCode(request: FastifyRequest): string {
     const unsignedCode = request.unsignCookie(request.cookies.autoLogin ?? '');
     const autoLoginCode = unsignedCode.value;
-    this.#fastify.log.info('Cookie: ' + request.cookies);
+    this.#fastify.log.info('Refresh token: ' + request.cookies.refresh);
+    this.#fastify.log.info('Cookie: ' + request.cookies.autoLogin);
     this.#fastify.log.info('Unsigned code: ' + unsignedCode);
     this.#fastify.log.info('Auto login code: ' + autoLoginCode);
 
