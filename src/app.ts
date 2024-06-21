@@ -75,7 +75,7 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
-      domain: '.ifelfi.com',
+      // domain: '.ifelfi.com',
       sameSite: 'none',
       path: '/',
       secure: true,
