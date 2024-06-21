@@ -76,7 +76,7 @@ async function build(opts: {}, data: any = process.env) {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
       domain: '.ifelfi.com',
-      sameSite: 'none',
+      sameSite: 'lax',
       path: '/',
       secure: true,
       httpOnly: true,
@@ -97,7 +97,7 @@ async function build(opts: {}, data: any = process.env) {
       complete: false,
     },
   });
-  // await app.register(helmet, { global: true });
+  await app.register(helmet, { global: true });
   await app.register(cors, {
     origin: ['http://localhost:5173', 'https://ifelfi.com', 'https://www.ifelfi.com'],
     credentials: true,
