@@ -75,8 +75,8 @@ async function build(opts: {}, data: any = process.env) {
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
-      // domain: '.ifelfi.com',
-      sameSite: 'none',
+      domain: '.ifelfi.com',
+      sameSite: 'lax',
       path: '/',
       secure: true,
       httpOnly: true,
@@ -99,7 +99,7 @@ async function build(opts: {}, data: any = process.env) {
   });
   await app.register(helmet, { global: true });
   await app.register(cors, {
-    origin: ['https://ifelfi.com', 'https://www.ifelfi.com', 'http://ifauth-core:10920'],
+    origin: ['https://ifelfi.com', 'https://www.ifelfi.com', 'http://ifauth-core:10920', 'http://ifauth-front:10921'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
