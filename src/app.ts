@@ -99,10 +99,10 @@ async function build(opts: {}, data: any = process.env) {
   });
   await app.register(helmet, { global: true });
   await app.register(cors, {
-    origin: ['https://ifelfi.com', 'https://www.ifelfi.com', 'http://ifauth-core:10920', 'http://ifauth-front:10921'],
+    origin: /ifelfi\.com$/,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie'],
     exposedHeaders: ['Authorization'],
   });
 
