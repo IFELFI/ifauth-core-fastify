@@ -44,72 +44,78 @@ export type FastifyRequestTypebox<TSchema extends FastifySchema> =
     RawRequestDefaultExpression<RawServerDefault>,
     TSchema,
     TypeBoxTypeProvider
-  >;
+    >;
+    
+    export type FastifyReplyTypebox<TSchema extends FastifySchema> =
+      FastifyReply<
+        RawServerDefault,
+        RawRequestDefaultExpression,
+        RawReplyDefaultExpression,
+        RouteGenericInterface,
+        ContextConfigDefault,
+        TSchema,
+        TypeBoxTypeProvider
+      >;
 
-export type FastifyReplyTypebox<TSchema extends FastifySchema> = FastifyReply<
-  RawServerDefault,
-  RawRequestDefaultExpression,
-  RawReplyDefaultExpression,
-  RouteGenericInterface,
-  ContextConfigDefault,
-  TSchema,
-  TypeBoxTypeProvider
->;
+    async function build(opts: {}, data: any = process.env) {
+      const app = fastify(opts).withTypeProvider<TypeBoxTypeProvider>();
+      await app.register(cors, {
+        origin: /ifelfi\.com$/,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'Set-Cookie',
+          'Cookie',
+        ],
+        exposedHeaders: ['Authorization'],
+      });
+      await app.register(helmet, { global: true });
+      await app.register(cookie, {
+        secret: app.config.COOKIE_SECRET,
+        parseOptions: {
+          domain: '.ifelfi.com',
+          sameSite: 'lax',
+          path: '/',
+          secure: true,
+          httpOnly: true,
+          maxAge: 60 * 60 * 24 * 7,
+          expires: new Date(Date.now() + 60 * 60 * 24 * 7),
+          signed: true,
+        },
+      } as FastifyCookieOptions);
+      await app.register(jwt, {
+        secret: app.config.TOKEN_SECRET,
+        sign: {
+          issuer: app.config.ISSUER,
+        },
+        verify: {
+          issuer: app.config.ISSUER,
+        },
+        decode: {
+          complete: false,
+        },
+      });
+      await app.register(env, {
+        confKey: 'config',
+        schema: envSchema,
+        data: data,
+      });
+      await app.register(prismaPlugin, {
+        datasourceUrl: app.config.DATABASE_URL,
+      });
+      await app.register(redis, {
+        url: app.config.REDIS_URL,
+      });
+      await app.register(sensible);
+      await app.register(loadServicesPlugin);
+      await app.register(typiaPlugin);
 
-async function build(opts: {}, data: any = process.env) {
-  const app = fastify(opts).withTypeProvider<TypeBoxTypeProvider>();
-  await app.register(env, {
-    confKey: 'config',
-    schema: envSchema,
-    data: data,
-  });
-  await app.register(prismaPlugin, {
-    datasourceUrl: app.config.DATABASE_URL,
-  });
-  await app.register(redis, {
-    url: app.config.REDIS_URL,
-  });
-  await app.register(sensible);
-  await app.register(loadServicesPlugin);
-  await app.register(typiaPlugin);
-  await app.register(cookie, {
-    secret: app.config.COOKIE_SECRET,
-    parseOptions: {
-      domain: '.ifelfi.com',
-      sameSite: 'lax',
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      expires: new Date(Date.now() + 60 * 60 * 24 * 7),
-      signed: true,
+      // Register routes
+      registerRoutes(app);
+
+      return app;
     }
-  } as FastifyCookieOptions);
-  await app.register(jwt, {
-    secret: app.config.TOKEN_SECRET,
-    sign: {
-      issuer: app.config.ISSUER,
-    },
-    verify: {
-      issuer: app.config.ISSUER,
-    },
-    decode: {
-      complete: false,
-    },
-  });
-  await app.register(helmet, { global: true });
-  await app.register(cors, {
-    origin: /ifelfi\.com$/,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie'],
-    exposedHeaders: ['Authorization'],
-  });
 
-  // Register routes
-  registerRoutes(app);
-
-  return app;
-}
-
-export default build;
+    export default build;
