@@ -28,7 +28,7 @@ async function run() {
             remoteAddress: req.ip,
             hostname: req.hostname,
             remotePort: req.connection.remotePort,
-            cookie: JSON.stringify(req.cookies),
+            cookie: JSON.stringify(req.headers['set-cookie']),
           };
         },
       },
