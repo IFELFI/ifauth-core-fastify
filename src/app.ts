@@ -23,7 +23,6 @@ import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import jwt from './plugins/jwt.plugin';
-import underPressure from '@fastify/under-pressure';
 // Import schema
 import envSchema from './schema/env.schema';
 import typiaPlugin from './plugins/typia.plugin';
@@ -67,7 +66,7 @@ async function build(opts: {}, data: any = process.env) {
     origin: /ifelfi\.com$/,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Set-Cookie', 'Cookie'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Authorization'],
   });
   await app.register(helmet, { global: true });
