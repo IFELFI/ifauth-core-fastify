@@ -123,13 +123,12 @@ export class AutoLoginService {
 
     const ssid = await prisma.ssid.findFirst({
       where: {
-        SSID: SSID,
-        id: storedCode.id,
+        id: storedCode.ssid,
       },
     });
 
-    if (!ssid || storedCode.ssid !== ssid.id) {
-      throw this.#fastify.httpErrors.badRequest('Invalid address');
+    if (!ssid || ssid.SSID !== SSID) {
+      throw this.#fastify.httpErrors.badRequest('Invalid client');
     }
     if (storedCode.expire_date < new Date()) {
       throw this.#fastify.httpErrors.badRequest('Expired code');
