@@ -10,7 +10,7 @@ import {
   profile,
   provider,
   provider_type,
-  users,
+  member,
 } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
@@ -74,7 +74,7 @@ describe('AuthLocalService', () => {
   });
 
   describe('signup', () => {
-    const createdUser: users = {
+    const createdUser: member = {
       id: 1,
       email: email,
       uuid_key: uuidv4(),
@@ -112,8 +112,8 @@ describe('AuthLocalService', () => {
         password: password,
       };
 
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(fastify.prisma.users, 'create').mockResolvedValue(createdUser);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(fastify.prisma.member, 'create').mockResolvedValue(createdUser);
       jest
         .spyOn(fastify.prisma.profile, 'create')
         .mockResolvedValue(createdProfile);
@@ -137,7 +137,7 @@ describe('AuthLocalService', () => {
       };
 
       jest
-        .spyOn(fastify.prisma.users, 'findUnique')
+        .spyOn(fastify.prisma.member, 'findUnique')
         .mockResolvedValue(createdUser);
 
       await expect(service.signup(signupData)).rejects.toThrow(
@@ -152,8 +152,8 @@ describe('AuthLocalService', () => {
         password: password,
       };
 
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(fastify.prisma.users, 'create').mockResolvedValue(createdUser);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(fastify.prisma.member, 'create').mockResolvedValue(createdUser);
       jest
         .spyOn(fastify.prisma.profile, 'create')
         .mockResolvedValue(createdProfile);
@@ -168,7 +168,7 @@ describe('AuthLocalService', () => {
   });
 
   describe('login', () => {
-    const findUser: users = {
+    const findUser: member = {
       id: 1,
       email: email,
       uuid_key: uuidv4(),
@@ -198,7 +198,7 @@ describe('AuthLocalService', () => {
         .spyOn(fastify.prisma, '$transaction')
         .mockImplementation((callback) => callback(fastify.prisma));
       jest
-        .spyOn(fastify.prisma.users, 'findUnique')
+        .spyOn(fastify.prisma.member, 'findUnique')
         .mockResolvedValue(findUser);
       jest
         .spyOn(fastify.prisma.profile, 'findUnique')
@@ -230,7 +230,7 @@ describe('AuthLocalService', () => {
         auto: false,
       };
 
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(null);
 
       await expect(service.login(loginData)).rejects.toThrow(
         'Invalid email or password',
@@ -245,7 +245,7 @@ describe('AuthLocalService', () => {
       };
 
       jest
-        .spyOn(fastify.prisma.users, 'findUnique')
+        .spyOn(fastify.prisma.member, 'findUnique')
         .mockResolvedValue(findUser);
       jest.spyOn(fastify.prisma.password, 'findUnique').mockResolvedValue(null);
 

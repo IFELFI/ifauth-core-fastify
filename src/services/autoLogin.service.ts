@@ -25,10 +25,13 @@ export class AutoLoginService {
   /**
    * Issue auto login code
    * @param code Authorization code for auto login
-   * @param address user address
+   * @param SSID SSID
    * @returns Auto login code
    */
-  public async issueCode(code: string, address: string): Promise<string> {
+  public async issueCode(
+    code: string,
+    SSID: string,
+  ): Promise<string> {
     const id = await this.#fastify.redis
       .get(code)
       .catch(() => {
@@ -44,14 +47,24 @@ export class AutoLoginService {
           );
         });
         return parseInt(result);
-      })
+      });
+
+    const ssid = await this.#fastify.prisma.ssid.findFirst({
+      where: {
+        user_id: id,
+        SSID: SSID,
+      },
+    });
+
+    if (!ssid) {
+      throw this.#fastify.httpErrors.badRequest('Invalid SSID');
+    }
 
     return await this.#fastify.prisma.$transaction(async (tx) => {
       const code = randomBytes(64).toString('hex');
-      const existingCode = await tx.auto_login_code.findFirst({
+      const existingCode = await tx.auto_login_code.findUnique({
         where: {
-          user_id: id,
-          target_address: address,
+          ssid: ssid.id,
         },
       });
       if (existingCode) {
@@ -71,9 +84,8 @@ export class AutoLoginService {
       } else {
         await tx.auto_login_code.create({
           data: {
-            users: { connect: { id: id } },
+            ssid: ssid.id,
             code: code,
-            target_address: address,
             expire_date: new Date(
               Date.now() +
                 this.#fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
@@ -88,12 +100,12 @@ export class AutoLoginService {
   /**
    * Verify auto login code
    * @param code Auto login code
-   * @param address User address
+   * @param SSID SSID
    * @returns New auto login code and user id
    */
   public async verifyAutoLoginCode(
     code: string,
-    address: string,
+    SSID: string,
   ): Promise<{
     id: number;
     code: string;
@@ -108,7 +120,15 @@ export class AutoLoginService {
     if (!storedCode) {
       throw this.#fastify.httpErrors.badRequest('Invalid code' + code);
     }
-    if (storedCode.target_address !== address) {
+
+    const ssid = await prisma.ssid.findFirst({
+      where: {
+        SSID: SSID,
+        id: storedCode.id,
+      },
+    });
+
+    if (!ssid || storedCode.ssid !== ssid.id) {
       throw this.#fastify.httpErrors.badRequest('Invalid address');
     }
     if (storedCode.expire_date < new Date()) {
@@ -127,7 +147,7 @@ export class AutoLoginService {
         ),
       },
     });
-    return { id: storedCode.user_id, code: code };
+    return { id: ssid.user_id, code: code };
   }
 
   /**
@@ -136,7 +156,7 @@ export class AutoLoginService {
    * @returns Auto login code
    */
   public parseAutoLoginCode(request: FastifyRequest): string {
-    const unsignedCode = request.unsignCookie(request.cookies.autoLogin ?? '');
+    const unsignedCode = request.unsignCookie(request.cookies.AUTO ?? '');
     const autoLoginCode = unsignedCode.value;
 
     if (!autoLoginCode) {

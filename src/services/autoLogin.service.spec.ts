@@ -10,11 +10,17 @@ describe('autoLoginService', () => {
   let service: AutoLoginService;
   let fastify: DeepMockProxy<FastifyInstance>;
 
+  const ssid = {
+    id: BigInt(1),
+    user_id: 1,
+    SSID: 'SSID',
+    create_date: new Date(),
+  };
+
   const autoLoginCode: auto_login_code = {
     id: BigInt(1),
     code: 'code',
-    user_id: 1,
-    target_address: 'address',
+    ssid: BigInt(1),
     create_date: new Date(),
     expire_date: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 7),
   };
@@ -75,8 +81,9 @@ describe('autoLoginService', () => {
       const address = 'address';
       jest.spyOn(fastify.redis, 'get').mockResolvedValue('1');
       jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
+      jest.spyOn(fastify.prisma.ssid, 'findFirst').mockResolvedValue(ssid);
       jest
-        .spyOn(fastify.prisma.auto_login_code, 'findFirst')
+        .spyOn(fastify.prisma.auto_login_code, 'findUnique')
         .mockResolvedValue(autoLoginCode);
       jest
         .spyOn(fastify.prisma.auto_login_code, 'update')
@@ -97,6 +104,7 @@ describe('autoLoginService', () => {
       jest
         .spyOn(fastify.prisma.auto_login_code, 'findUnique')
         .mockResolvedValue(autoLoginCode);
+      jest.spyOn(fastify.prisma.ssid, 'findFirst').mockResolvedValue(ssid);
       jest
         .spyOn(fastify.prisma.auto_login_code, 'update')
         .mockResolvedValue(autoLoginCode);

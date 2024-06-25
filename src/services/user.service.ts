@@ -1,5 +1,6 @@
 import { provider_type } from '@prisma/client';
-import { FastifyInstance } from 'fastify';
+import { randomBytes } from 'crypto';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 
 export class UserService {
   #fastify: FastifyInstance;
@@ -22,11 +23,11 @@ export class UserService {
     updateDate: Date;
     provider: provider_type;
   }> {
-    const user = await this.#fastify.prisma.users
+    const user = await this.#fastify.prisma.member
       .findUnique({
         where: { uuid_key: uuidKey },
       })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to find user',
         );
@@ -52,7 +53,7 @@ export class UserService {
       .findUnique({
         where: { user_id: user.id },
       })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to find user provider',
         );
@@ -78,11 +79,11 @@ export class UserService {
    * @returns Promise of logout result
    */
   public async logout(uuidKey: string): Promise<boolean> {
-    const findUser = await this.#fastify.prisma.users
+    const findUser = await this.#fastify.prisma.member
       .findUnique({
         where: { uuid_key: uuidKey },
       })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to find user',
         );
@@ -105,9 +106,9 @@ export class UserService {
    * @returns Promise of delete user result
    */
   public async deleteUser(uuidKey: string): Promise<boolean> {
-    await this.#fastify.prisma.users
+    await this.#fastify.prisma.member
       .delete({ where: { uuid_key: uuidKey } })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to delete user',
         );
@@ -118,5 +119,38 @@ export class UserService {
       );
     });
     return true;
+  }
+
+  /**
+   * Get SSID token
+   * @param request Request object
+   * @returns SSID token
+   */
+  public getSSID(request: FastifyRequest): string | null {
+    const unsignedSsidCookie = request.unsignCookie(request.cookies.SSID ?? '');
+    const ssid = unsignedSsidCookie.value;
+
+    return ssid;
+  }
+
+  /**
+   * Issue SSID token
+   * @param id member id
+   * @returns SSID token
+   */
+  public async issueSSID(id: number): Promise<string> {
+    const ssid = randomBytes(16).toString('hex');
+    await this.#fastify.prisma.ssid.create({
+      data: {
+        member: {
+          connect: {
+            id,
+          }
+        },
+        SSID: ssid,
+      },
+    });
+    
+    return ssid;
   }
 }

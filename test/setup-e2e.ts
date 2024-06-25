@@ -1,4 +1,4 @@
-import { auto_login_code } from '@prisma/client';
+import { auto_login_code, ssid } from '@prisma/client';
 import { afterAll, afterEach, beforeAll, expect } from '@jest/globals';
 import {
   PostgreSqlContainer,
@@ -14,7 +14,13 @@ import jwt from 'jsonwebtoken';
 import cookie from '@fastify/cookie';
 import bcrypt from 'bcrypt';
 import 'dotenv/config';
-import { password, profile, users, provider, provider_type } from '@prisma/client';
+import {
+  password,
+  profile,
+  member,
+  provider,
+  provider_type,
+} from '@prisma/client';
 
 let postgresContainer: StartedPostgreSqlContainer;
 let postgresClient: Client;
@@ -55,12 +61,13 @@ afterAll(async () => {
 
 afterEach(async () => {
   // Clear the database after each test
-  await postgresClient.query('DELETE FROM "member"."users"');
-  await postgresClient.query('DELETE FROM "member"."profile"');
   await postgresClient.query('DELETE FROM "auth"."password"');
   await postgresClient.query('DELETE FROM "auth"."provider"');
   await postgresClient.query('DELETE FROM "auth"."social_info"');
   await postgresClient.query('DELETE FROM "auth"."auto_login_code"');
+  await postgresClient.query('DELETE FROM "member"."profile"');
+  await postgresClient.query('DELETE FROM "member"."ssid"');
+  await postgresClient.query('DELETE FROM "member"."member"');
   await redisClient.flushAll();
 });
 
@@ -85,13 +92,14 @@ export const setupData = async () => {
     pass: string = 'password',
     prov: provider_type = 'local',
   ): Promise<{
-    user: users;
+    member: member;
     profile: profile;
     password: password;
     provider: provider;
     salt: string;
     realPassword: string;
     autoLoginCode: auto_login_code;
+    ssid: ssid;
   }> => {
     const salt = bcrypt.genSaltSync(10);
     const userData = {
@@ -99,7 +107,7 @@ export const setupData = async () => {
       email: email,
     };
     const user = await postgresClient.query(
-      `INSERT INTO "member"."users" (email, uuid_key) VALUES ('${userData.email}', '${userData.uuidKey}') RETURNING *;`,
+      `INSERT INTO "member"."member" (email, uuid_key) VALUES ('${userData.email}', '${userData.uuidKey}') RETURNING *;`,
     );
     const profileData = {
       nickname: nickname,
@@ -107,6 +115,9 @@ export const setupData = async () => {
     };
     const profile = await postgresClient.query(
       `INSERT INTO "member"."profile" (user_id, nickname, image_url) VALUES (${user.rows[0].id}, '${profileData.nickname}', '${profileData.imageUrl}') RETURNING *;`,
+    );
+    const ssid = await postgresClient.query(
+      `INSERT INTO "member"."ssid" (user_id, "SSID") VALUES (${user.rows[0].id}, 'ssid') RETURNING *;`,
     );
     const passwordData = {
       password: pass,
@@ -122,17 +133,18 @@ export const setupData = async () => {
       `INSERT INTO "auth"."provider" (user_id, provider) VALUES (${user.rows[0].id}, '${providerData.provider}') RETURNING *;`,
     );
     const autoLoginCode = await postgresClient.query(
-      `INSERT INTO "auth"."auto_login_code" (user_id, code, expire_date, target_address) VALUES (${user.rows[0].id}, 'code', NOW() + INTERVAL '1 day', 'address') RETURNING *;`,
+      `INSERT INTO "auth"."auto_login_code" (ssid, code, expire_date) VALUES (${ssid.rows[0].id}, 'code', NOW() + INTERVAL '1 day') RETURNING *;`,
     );
 
     return {
-      user: user.rows[0],
+      member: user.rows[0],
       profile: profile.rows[0],
       password: password.rows[0],
       provider: provider.rows[0],
       salt: salt,
       realPassword: pass,
       autoLoginCode: autoLoginCode.rows[0],
+      ssid: ssid.rows[0],
     };
   };
 
@@ -165,8 +177,8 @@ export const setupData = async () => {
 
   const user = await createTestUser();
   const accessPayload: AccessTokenPayloadData = {
-    uuidKey: user.user.uuid_key,
-    email: user.user.email,
+    uuidKey: user.member.uuid_key,
+    email: user.member.email,
     nickname: user.profile.nickname,
     imageUrl: user.profile.image_url,
   };
