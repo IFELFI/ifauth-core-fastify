@@ -22,7 +22,9 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('REF', refreshToken)
+        .setCookie('REF', refreshToken, {
+          expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+        })
         .header('Authorization', `Bearer ${accessToken}`)
         .send(replyData);
     },
@@ -71,7 +73,9 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('REF', newRefreshToken)
+        .setCookie('REF', newRefreshToken, {
+          expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+        })
         .header('Authorization', `Bearer ${newAccessToken}`)
         .send(replyData);
     }
@@ -82,7 +86,9 @@ export default async function (fastify: FastifyTypebox) {
 
     reply
       .code(200)
-      .setCookie('REF', refreshToken)
+      .setCookie('REF', refreshToken, {
+        expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+      })
       .header('Authorization', `Bearer ${accessToken}`)
       .send(replyData);
   });

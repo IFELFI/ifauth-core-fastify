@@ -78,8 +78,6 @@ async function build(opts: {}, data: any = process.env) {
       path: '/',
       secure: true,
       httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      expires: new Date(Date.now() + 60 * 60 * 24 * 7),
       signed: true,
     },
   } as FastifyCookieOptions);

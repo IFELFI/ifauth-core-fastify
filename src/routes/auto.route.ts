@@ -25,7 +25,11 @@ export default async function (fastify: FastifyTypebox) {
       message: 'Auto login verified',
       code: authorizationCode,
     };
-    reply.setCookie('AUTO', newAutoCode);
+    reply.setCookie('AUTO', newAutoCode, {
+      expires: new Date(
+        Date.now() + fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
+      ),
+    });
     reply.code(200).send(replyData);
   });
 
@@ -51,7 +55,14 @@ export default async function (fastify: FastifyTypebox) {
         message: 'Auto login code is issued',
       };
 
-      reply.code(200).setCookie('AUTO', code).send(replyData);
+      reply
+        .code(200)
+        .setCookie('AUTO', code, {
+          expires: new Date(
+            Date.now() + fastify.config.AUTO_LOGIN_CODE_EXPIRATION * 1000,
+          ),
+        })
+        .send(replyData);
     },
   );
 }
