@@ -118,7 +118,7 @@ export class AutoLoginService {
       },
     });
     if (!storedCode) {
-      throw this.#fastify.httpErrors.badRequest('Invalid code' + code);
+      throw this.#fastify.httpErrors.badRequest('Invalid code');
     }
 
     const ssid = await prisma.ssid.findFirst({
