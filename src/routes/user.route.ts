@@ -46,6 +46,10 @@ export default async function (fastify: FastifyInstance) {
     const logoutResult = await fastify.services.userService.logout(
       payload.uuidKey,
     );
+
+    const autoCode = fastify.services.autoLoginService.parseAutoLoginCode(request);
+    await fastify.services.autoLoginService.deleteAutoLoginCode(autoCode);
+
     if (logoutResult === false) {
       const replyData: ReplyData = {
         message: 'Error logging out',
@@ -55,6 +59,8 @@ export default async function (fastify: FastifyInstance) {
       const replyData: ReplyData = {
         message: 'User logged out',
       };
+      reply.setCookie('REF', '', { expires: new Date(0) });
+      reply.setCookie('AUTO', '', { expires: new Date(0) }); 
       reply.code(200).send(replyData);
     }
   });

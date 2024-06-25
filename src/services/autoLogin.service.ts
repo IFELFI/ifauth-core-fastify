@@ -163,4 +163,12 @@ export class AutoLoginService {
     }
     return autoLoginCode;
   }
+
+  public async deleteAutoLoginCode(code: string): Promise<void> {
+    await this.#fastify.prisma.auto_login_code.delete({
+      where: {
+        code: code,
+      },
+    });
+  }
 }
