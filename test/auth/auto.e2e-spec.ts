@@ -1,4 +1,11 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import build from '../../src/app';
 import {
@@ -38,11 +45,9 @@ describe('Auth auto', () => {
       const response = await server.inject({
         method: 'GET',
         url: '/auth/auto/verify',
-        headers: {
-          'x-forwarded-for': 'address',
-        },
         cookies: {
-          autoLogin: signer.sign('code'),
+          AUTO: signer.sign('code'),
+          SSID: signer.sign(data.user.ssid.SSID),
         },
       });
       expect(response.statusCode).toBe(200);
@@ -55,7 +60,7 @@ describe('Auth auto', () => {
 
     beforeEach(async () => {
       data = await setupData();
-      await redisClient.set(code, data.user.user.id);
+      await redisClient.set(code, data.user.member.id);
     });
 
     it('should return 200 and a new auto login code', async () => {
@@ -65,8 +70,8 @@ describe('Auth auto', () => {
         query: {
           code: code,
         },
-        headers: {
-          'x-forwarded-for': 'address',
+        cookies: {
+          SSID: signer.sign(data.user.ssid.SSID),
         },
       });
       expect(response.statusCode).toBe(200);

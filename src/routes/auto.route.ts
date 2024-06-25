@@ -1,6 +1,6 @@
-import { FastifyTypebox } from '../../app';
-import { AuthReplyData, ReplyData } from '../../interfaces/reply.interface';
-import { codeAuthSchema } from '../../schema/auth.schema';
+import { FastifyTypebox } from '../app';
+import { AuthReplyData, ReplyData } from '../interfaces/reply.interface';
+import { codeAuthSchema } from '../schema/auth.schema';
 
 export default async function (fastify: FastifyTypebox) {
   const basePath = '/auth/auto';
@@ -8,16 +8,16 @@ export default async function (fastify: FastifyTypebox) {
   fastify.get(`${basePath}/verify`, async (request, reply) => {
     const autoLoginCode =
       fastify.services.autoLoginService.parseAutoLoginCode(request);
-    const address =
-      request.headers['x-forwarded-for']?.toString() || request.ip;
+    const SSID = fastify.services.userService.getSSID(request);
+    if (!SSID) {
+      throw fastify.httpErrors.badRequest('SSID is required');
+    }
 
     const { id: userId, code: newAutoCode } =
       await fastify.services.autoLoginService.verifyAutoLoginCode(
         autoLoginCode,
-        address,
+        SSID,
       );
-    reply.setCookie('autoLogin', newAutoCode);
-
     const authorizationCode =
       await fastify.services.tokenService.issueAuthorizationCode(userId);
 
@@ -25,6 +25,7 @@ export default async function (fastify: FastifyTypebox) {
       message: 'Auto login verified',
       code: authorizationCode,
     };
+    reply.setCookie('AUTO', newAutoCode);
     reply.code(200).send(replyData);
   });
 
@@ -35,18 +36,22 @@ export default async function (fastify: FastifyTypebox) {
     },
     async (request, reply) => {
       const autoAuthCode = request.query.code;
-      const address =
-        request.headers['x-forwarded-for']?.toString() || request.ip;
+      const SSID = fastify.services.userService.getSSID(request);
+
+      if (!SSID) {
+        throw fastify.httpErrors.badRequest('SSID is required');
+      }
+
       const code = await fastify.services.autoLoginService.issueCode(
         autoAuthCode,
-        address,
+        SSID,
       );
 
       const replyData: ReplyData = {
         message: 'Auto login code is issued',
       };
 
-      reply.code(200).setCookie('autoLogin', code).send(replyData);
+      reply.code(200).setCookie('AUTO', code).send(replyData);
     },
   );
 }

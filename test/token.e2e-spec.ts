@@ -1,4 +1,11 @@
-import { it, beforeAll, afterAll, expect, describe, beforeEach } from '@jest/globals';
+import {
+  it,
+  beforeAll,
+  afterAll,
+  expect,
+  describe,
+  beforeEach,
+} from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import build from '../src/app';
 import {
@@ -31,10 +38,10 @@ describe('Token', () => {
 
   describe('[GET] /token/issue', () => {
     const code = randomBytes(16).toString('hex');
-    
+
     beforeEach(async () => {
       data = await setupData();
-      await redisClient.set(code, data.user.user.id);
+      await redisClient.set(code, data.user.member.id);
     });
 
     it('should issue token pair with authorization code', async () => {
@@ -109,7 +116,8 @@ describe('Token', () => {
           Authorization: `Bearer ${data.accessToken.normal}`,
         },
         cookies: {
-          refresh: signer.sign(data.refreshToken.normal),
+          REF: signer.sign(data.refreshToken.normal),
+          SSID: signer.sign(data.user.ssid.SSID),
         },
       });
       expect(response.statusCode).toBe(200);
@@ -118,7 +126,10 @@ describe('Token', () => {
     });
 
     it('should validate and refresh token if access token is expired but refresh token is valid', async () => {
-      await redisClient.set(data.user.user.uuid_key, data.refreshToken.normal);
+      await redisClient.set(
+        data.user.member.uuid_key,
+        data.refreshToken.normal,
+      );
       const response = await server.inject({
         method: 'GET',
         url: '/token/refresh',
@@ -126,7 +137,8 @@ describe('Token', () => {
           Authorization: `Bearer ${data.accessToken.expired}`,
         },
         cookies: {
-          refresh: signer.sign(data.refreshToken.normal),
+          REF: signer.sign(data.refreshToken.normal),
+          SSID: signer.sign(data.user.ssid.SSID),
         },
       });
       expect(response.statusCode).toBe(200);
@@ -136,7 +148,7 @@ describe('Token', () => {
 
     it('should not validate and refresh token if access token is expired and refresh token is expired', async () => {
       await redisClient.set(
-        data.user.user.uuid_key,
+        data.user.member.uuid_key,
         data.refreshToken.expired,
       );
       const response = await server.inject({
@@ -146,7 +158,7 @@ describe('Token', () => {
           Authorization: `Bearer ${data.accessToken.expired}`,
         },
         cookies: {
-          refresh: signer.sign(data.refreshToken.expired),
+          REF: signer.sign(data.refreshToken.expired),
         },
       });
       expect(response.statusCode).toBe(401);

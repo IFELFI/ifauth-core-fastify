@@ -52,7 +52,18 @@ CREATE TABLE "member"."profile" (
 );
 
 -- CreateTable
-CREATE TABLE "member"."users" (
+CREATE TABLE "auth"."auto_login_code" (
+    "id" BIGSERIAL NOT NULL,
+    "code" VARCHAR(256) NOT NULL,
+    "create_date" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expire_date" TIMESTAMPTZ(6) NOT NULL,
+    "ssid" BIGINT NOT NULL,
+
+    CONSTRAINT "pk_regen_code" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "member"."member" (
     "id" SERIAL NOT NULL,
     "uuid_key" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" VARCHAR(256) NOT NULL,
@@ -61,15 +72,13 @@ CREATE TABLE "member"."users" (
 );
 
 -- CreateTable
-CREATE TABLE "auth"."auto_login_code" (
+CREATE TABLE "member"."ssid" (
     "id" BIGSERIAL NOT NULL,
     "user_id" INTEGER NOT NULL,
-    "code" VARCHAR(256) NOT NULL,
-    "target_address" VARCHAR(256) NOT NULL,
+    "SSID" VARCHAR(256) NOT NULL,
     "create_date" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expire_date" TIMESTAMPTZ(6) NOT NULL,
 
-    CONSTRAINT "pk_regen_code" PRIMARY KEY ("id")
+    CONSTRAINT "pk_ssid" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -88,29 +97,35 @@ CREATE UNIQUE INDEX "uni_profile" ON "member"."profile"("user_id");
 CREATE UNIQUE INDEX "uni_nickname" ON "member"."profile"("nickname");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "uni_uuid_key" ON "member"."users"("uuid_key");
-
--- CreateIndex
-CREATE UNIQUE INDEX "uni_email" ON "member"."users"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "uni_regen_code" ON "auth"."auto_login_code"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "uni_user_addr" ON "auth"."auto_login_code"("user_id", "target_address");
+CREATE UNIQUE INDEX "uni_ssid" ON "auth"."auto_login_code"("ssid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uni_uuid_key" ON "member"."member"("uuid_key");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uni_email" ON "member"."member"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uni_user_ssid" ON "member"."ssid"("user_id", "SSID");
 
 -- AddForeignKey
-ALTER TABLE "auth"."password" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auth"."password" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."member"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auth"."provider" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auth"."provider" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."member"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "auth"."social_info" ADD CONSTRAINT "fk_provider" FOREIGN KEY ("provider_id") REFERENCES "auth"."provider"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "member"."profile" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "member"."profile" ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id") REFERENCES "member"."member"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auth"."auto_login_code" ADD CONSTRAINT "fk_user_id" FOREIGN KEY ("user_id") REFERENCES "member"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auth"."auto_login_code" ADD CONSTRAINT "fk_ssid" FOREIGN KEY ("ssid") REFERENCES "member"."ssid"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "member"."ssid" ADD CONSTRAINT "fk_user_id" FOREIGN KEY ("user_id") REFERENCES "member"."member"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

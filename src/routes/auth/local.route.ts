@@ -54,6 +54,14 @@ export default async function (fastify: FastifyTypebox) {
         replyData.autoAuthCode = autoAuthCode;
       }
 
+      const SSID = fastify.services.userService.getSSID(request);
+      if (!SSID) {
+        const newSSID = await fastify.services.userService.issueSSID(userId);
+        reply.setCookie('SSID', newSSID, {
+          expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        });
+      }
+
       reply.code(200).send(replyData);
     },
   );

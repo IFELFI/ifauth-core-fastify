@@ -22,7 +22,7 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('refresh', refreshToken)
+        .setCookie('REF', refreshToken)
         .header('Authorization', `Bearer ${accessToken}`)
         .send(replyData);
     },
@@ -71,7 +71,7 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('refresh', newRefreshToken)
+        .setCookie('REF', newRefreshToken)
         .header('Authorization', `Bearer ${newAccessToken}`)
         .send(replyData);
     }
@@ -82,7 +82,7 @@ export default async function (fastify: FastifyTypebox) {
 
     reply
       .code(200)
-      .setCookie('refresh', refreshToken)
+      .setCookie('REF', refreshToken)
       .header('Authorization', `Bearer ${accessToken}`)
       .send(replyData);
   });

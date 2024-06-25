@@ -1,4 +1,4 @@
-import { provider_type, users } from '@prisma/client';
+import { provider_type } from '@prisma/client';
 import { FastifyTypebox } from '../../app';
 import { localLoginSchema, localSignupSchema } from '../../schema/auth.schema';
 import { Static } from '@sinclair/typebox';
@@ -28,7 +28,7 @@ export class AuthLocalService {
     imageUrl?: string;
   }): Promise<number> {
     return await this.#fastify.prisma.$transaction(async (tx) => {
-      const searchUser = await tx.users.findUnique({
+      const searchUser = await tx.member.findUnique({
         where: { email: email },
       });
       if (searchUser) {
@@ -37,7 +37,7 @@ export class AuthLocalService {
       try {
         const modifiedNickname = nickname || email.split('@')[0];
         const hashedPassword = await bcrypt.hash(password, 10);
-        const createUser = await tx.users.create({
+        const createUser = await tx.member.create({
           data: { email: email },
         });
         await tx.profile.create({
@@ -82,7 +82,7 @@ export class AuthLocalService {
     password: string;
   }): Promise<number> {
     const prisma = this.#fastify.prisma;
-    const searchUser = await prisma.users.findUnique({
+    const searchUser = await prisma.member.findUnique({
       where: { email: email },
     });
     if (!searchUser) {

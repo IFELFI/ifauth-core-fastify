@@ -1,11 +1,7 @@
 import { it, afterAll, beforeAll, describe, expect } from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import build from '../../src/app';
-import {
-  postgresContainer,
-  redisContainer,
-  setupData,
-} from '../setup-e2e';
+import { postgresContainer, redisContainer, setupData } from '../setup-e2e';
 
 describe('Auth local', () => {
   let server: FastifyInstance;
@@ -108,7 +104,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
           password: data.user.realPassword,
         },
       });
@@ -123,7 +119,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
           password: data.user.realPassword,
           auto: true,
         },
@@ -140,7 +136,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
         },
       });
       expect(response.statusCode).toBe(400);
@@ -152,7 +148,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
           password: 'wrong_password',
         },
       });
