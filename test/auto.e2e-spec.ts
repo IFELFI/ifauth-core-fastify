@@ -7,14 +7,14 @@ import {
   it,
 } from '@jest/globals';
 import { FastifyInstance } from 'fastify';
-import build from '../../src/app';
+import build from '../src/app';
 import {
   postgresContainer,
   redisClient,
   redisContainer,
   setupData,
   signer,
-} from '../setup-e2e';
+} from './setup-e2e';
 import { randomBytes } from 'crypto';
 
 describe('Auth auto', () => {
@@ -36,7 +36,7 @@ describe('Auth auto', () => {
     await server.close();
   });
 
-  describe('[GET] /auth/auto/verify', () => {
+  describe('[GET] /auto/verify', () => {
     beforeEach(async () => {
       data = await setupData();
     });
@@ -44,7 +44,7 @@ describe('Auth auto', () => {
     it('should return 200 and a new auto login code', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: '/auth/auto/verify',
+        url: '/auto/verify',
         cookies: {
           AUTO: signer.sign('code'),
           SSID: signer.sign(data.user.ssid.SSID),
@@ -55,7 +55,7 @@ describe('Auth auto', () => {
     });
   });
 
-  describe('[GET] /auth/auto/issue', () => {
+  describe('[GET] /auto/issue', () => {
     const code = randomBytes(16).toString('hex');
 
     beforeEach(async () => {
@@ -66,7 +66,7 @@ describe('Auth auto', () => {
     it('should return 200 and a new auto login code', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: '/auth/auto/issue',
+        url: '/auto/issue',
         query: {
           code: code,
         },

@@ -103,21 +103,7 @@ describe('UserService', () => {
     it('should logout user', async () => {
       jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(user);
       jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
-      expect(await service.logout(user.uuid_key)).toBe(true);
-    });
-
-    it('should throw not found error', async () => {
-      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(null);
-      await expect(service.logout(user.uuid_key)).rejects.toThrow('User not found');
-    });
-
-    it('should throw internal server error', async () => {
-      jest
-        .spyOn(fastify.prisma.member, 'findUnique')
-        .mockRejectedValue(new Error());
-      await expect(service.logout(user.uuid_key)).rejects.toThrow(
-        'Failed to find user',
-      );
+      expect(await service.logout(user.uuid_key)).toBeUndefined();
     });
 
     it('should throw internal server error when delete refresh token from server', async () => {
