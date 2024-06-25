@@ -126,11 +126,31 @@ export class UserService {
    * @param request Request object
    * @returns SSID token
    */
-  public getSSID(request: FastifyRequest): string | null {
+  public parseSSID(request: FastifyRequest): string | null {
     const unsignedSsidCookie = request.unsignCookie(request.cookies.SSID ?? '');
-    const ssid = unsignedSsidCookie.value;
+    const SSID = unsignedSsidCookie.value;
 
-    return ssid;
+    return SSID;
+  }
+
+  /**
+   * Verify SSID token
+   * @param memberId
+   * @param SSID SSID token
+   * @returns Promise of SSID verification result
+   */
+  public async verifySSID(memberId: number, SSID: string | null): Promise<boolean> {
+    if (SSID === null) {
+      return false;
+    }
+    const ssid = await this.#fastify.prisma.ssid.findFirst({
+      where: {
+        user_id: memberId,
+        SSID,
+      },
+    });
+
+    return !!ssid;
   }
 
   /**
@@ -145,12 +165,12 @@ export class UserService {
         member: {
           connect: {
             id,
-          }
+          },
         },
         SSID: ssid,
       },
     });
-    
+
     return ssid;
   }
 }
