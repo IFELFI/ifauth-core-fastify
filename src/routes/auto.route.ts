@@ -3,7 +3,7 @@ import { AuthReplyData, ReplyData } from '../interfaces/reply.interface';
 import { codeAuthSchema } from '../schema/auth.schema';
 
 export default async function (fastify: FastifyTypebox) {
-  const basePath = '/auth/auto';
+  const basePath = '/auto';
 
   fastify.get(`${basePath}/verify`, async (request, reply) => {
     const autoLoginCode =
