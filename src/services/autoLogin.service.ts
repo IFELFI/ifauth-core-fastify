@@ -146,7 +146,7 @@ export class AutoLoginService {
         ),
       },
     });
-    return { id: ssid.user_id, code: code };
+    return { id: ssid.user_id, code: newCode };
   }
 
   /**
