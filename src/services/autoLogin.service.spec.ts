@@ -100,7 +100,6 @@ describe('autoLoginService', () => {
   describe('verifyAutoLoginCode', () => {
     it('should return new auto login code', async () => {
       const code = 'code';
-      const address = 'address';
       jest
         .spyOn(fastify.prisma.auto_login_code, 'findUnique')
         .mockResolvedValue(autoLoginCode);
@@ -108,7 +107,7 @@ describe('autoLoginService', () => {
       jest
         .spyOn(fastify.prisma.auto_login_code, 'update')
         .mockResolvedValue(autoLoginCode);
-      const result = await service.verifyAutoLoginCode(code, address);
+      const result = await service.verifyAutoLoginCode(code, ssid.SSID);
 
       expect(result.id).toEqual(1);
       expect(result.code).toBeDefined();

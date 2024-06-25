@@ -63,7 +63,7 @@ async function build(opts: {}, data: any = process.env) {
     data: data,
   });
   await app.register(cors, {
-    origin: /ifelfi\.com$/,
+    origin: ['http://localhost:5173', 'https://ifelfi.com', 'https://www.ifelfi.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],

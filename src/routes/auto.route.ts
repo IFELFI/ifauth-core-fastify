@@ -8,6 +8,9 @@ export default async function (fastify: FastifyTypebox) {
   fastify.get(`${basePath}/verify`, async (request, reply) => {
     const autoLoginCode =
       fastify.services.autoLoginService.parseAutoLoginCode(request);
+    if (!autoLoginCode) {
+      throw fastify.httpErrors.badRequest('Auto login code is required');
+    }
     const SSID = fastify.services.userService.parseSSID(request);
     if (!SSID) {
       throw fastify.httpErrors.badRequest('SSID is required');

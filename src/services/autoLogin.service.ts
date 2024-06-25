@@ -61,7 +61,7 @@ export class AutoLoginService {
     }
 
     return await this.#fastify.prisma.$transaction(async (tx) => {
-      const code = randomBytes(64).toString('hex');
+      const code = randomBytes(32).toString('hex');
       const existingCode = await tx.auto_login_code.findUnique({
         where: {
           ssid: ssid.id,
@@ -133,7 +133,7 @@ export class AutoLoginService {
     if (storedCode.expire_date < new Date()) {
       throw this.#fastify.httpErrors.badRequest('Expired code');
     }
-    const newCode = randomBytes(16).toString('hex');
+    const newCode = randomBytes(32).toString('hex');
     await prisma.auto_login_code.update({
       where: {
         id: storedCode.id,
@@ -154,13 +154,10 @@ export class AutoLoginService {
    * @param request Fastify request
    * @returns Auto login code
    */
-  public parseAutoLoginCode(request: FastifyRequest): string {
+  public parseAutoLoginCode(request: FastifyRequest): string | null{
     const unsignedCode = request.unsignCookie(request.cookies.AUTO ?? '');
     const autoLoginCode = unsignedCode.value;
 
-    if (!autoLoginCode) {
-      throw this.#fastify.httpErrors.badRequest('Invalid auto login code');
-    }
     return autoLoginCode;
   }
 

@@ -76,28 +76,14 @@ export class UserService {
   /**
    * Logout user
    * @param uuidKey User's UUID key
-   * @returns Promise of logout result
    */
-  public async logout(uuidKey: string): Promise<boolean> {
-    const findUser = await this.#fastify.prisma.member
-      .findUnique({
-        where: { uuid_key: uuidKey },
-      })
-      .catch(() => {
-        throw this.#fastify.httpErrors.internalServerError(
-          'Failed to find user',
-        );
-      });
-    if (!findUser) {
-      throw this.#fastify.httpErrors.notFound('User not found');
-    }
+  public async logout(uuidKey: string): Promise<void> {
     // Delete refresh token from Redis
     await this.#fastify.redis.del(uuidKey).catch((error) => {
       throw this.#fastify.httpErrors.internalServerError(
         'Failed to delete refresh token from server',
       );
     });
-    return true;
   }
 
   /**
