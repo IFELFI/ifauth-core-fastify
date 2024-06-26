@@ -1,11 +1,7 @@
 import { it, afterAll, beforeAll, describe, expect } from '@jest/globals';
 import { FastifyInstance } from 'fastify';
 import build from '../../src/app';
-import {
-  postgresContainer,
-  redisContainer,
-  setupData,
-} from '../setup-e2e';
+import { postgresContainer, redisContainer, setupData } from '../setup-e2e';
 
 describe('Auth local', () => {
   let server: FastifyInstance;
@@ -108,7 +104,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
           password: data.user.realPassword,
         },
       });
@@ -117,13 +113,30 @@ describe('Auth local', () => {
       expect(body).toHaveProperty('code');
     });
 
+    it('should return 200 with autoAuthCode when login with proper data and auto=true', async () => {
+      const data = await setupData();
+      const response = await server.inject({
+        method: 'POST',
+        url: '/auth/local/login',
+        payload: {
+          email: data.user.member.email,
+          password: data.user.realPassword,
+          auto: true,
+        },
+      });
+      const body = JSON.parse(response.body);
+      expect(response.statusCode).toBe(200);
+      expect(body).toHaveProperty('code');
+      expect(body).toHaveProperty('autoAuthCode');
+    });
+
     it('should return 400 when login with invalid data', async () => {
       const data = await setupData();
       const response = await server.inject({
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
         },
       });
       expect(response.statusCode).toBe(400);
@@ -135,7 +148,7 @@ describe('Auth local', () => {
         method: 'POST',
         url: '/auth/local/login',
         payload: {
-          email: data.user.user.email,
+          email: data.user.member.email,
           password: 'wrong_password',
         },
       });

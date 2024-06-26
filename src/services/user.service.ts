@@ -1,5 +1,6 @@
 import { provider_type } from '@prisma/client';
-import { FastifyInstance } from 'fastify';
+import { randomBytes } from 'crypto';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 
 export class UserService {
   #fastify: FastifyInstance;
@@ -22,11 +23,11 @@ export class UserService {
     updateDate: Date;
     provider: provider_type;
   }> {
-    const user = await this.#fastify.prisma.users
+    const user = await this.#fastify.prisma.member
       .findUnique({
         where: { uuid_key: uuidKey },
       })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to find user',
         );
@@ -52,7 +53,7 @@ export class UserService {
       .findUnique({
         where: { user_id: user.id },
       })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to find user provider',
         );
@@ -75,28 +76,14 @@ export class UserService {
   /**
    * Logout user
    * @param uuidKey User's UUID key
-   * @returns Promise of logout result
    */
-  public async logout(uuidKey: string): Promise<boolean> {
-    const findUser = await this.#fastify.prisma.users
-      .findUnique({
-        where: { uuid_key: uuidKey },
-      })
-      .catch((error) => {
-        throw this.#fastify.httpErrors.internalServerError(
-          'Failed to find user',
-        );
-      });
-    if (!findUser) {
-      throw this.#fastify.httpErrors.notFound('User not found');
-    }
+  public async logout(uuidKey: string): Promise<void> {
     // Delete refresh token from Redis
     await this.#fastify.redis.del(uuidKey).catch((error) => {
       throw this.#fastify.httpErrors.internalServerError(
         'Failed to delete refresh token from server',
       );
     });
-    return true;
   }
 
   /**
@@ -105,9 +92,9 @@ export class UserService {
    * @returns Promise of delete user result
    */
   public async deleteUser(uuidKey: string): Promise<boolean> {
-    await this.#fastify.prisma.users
+    await this.#fastify.prisma.member
       .delete({ where: { uuid_key: uuidKey } })
-      .catch((error) => {
+      .catch(() => {
         throw this.#fastify.httpErrors.internalServerError(
           'Failed to delete user',
         );
@@ -118,5 +105,58 @@ export class UserService {
       );
     });
     return true;
+  }
+
+  /**
+   * Get SSID token
+   * @param request Request object
+   * @returns SSID token
+   */
+  public parseSSID(request: FastifyRequest): string | null {
+    const unsignedSsidCookie = request.unsignCookie(request.cookies.SSID ?? '');
+    const SSID = unsignedSsidCookie.value;
+
+    return SSID;
+  }
+
+  /**
+   * Verify SSID token
+   * @param memberId
+   * @param SSID SSID token
+   * @returns Promise of SSID verification result
+   */
+  public async verifySSID(memberId: number, SSID: string | null): Promise<boolean> {
+    if (SSID === null) {
+      return false;
+    }
+    const ssid = await this.#fastify.prisma.ssid.findFirst({
+      where: {
+        user_id: memberId,
+        SSID,
+      },
+    });
+
+    return !!ssid;
+  }
+
+  /**
+   * Issue SSID token
+   * @param id member id
+   * @returns SSID token
+   */
+  public async issueSSID(id: number): Promise<string> {
+    const ssid = randomBytes(16).toString('hex');
+    await this.#fastify.prisma.ssid.create({
+      data: {
+        member: {
+          connect: {
+            id,
+          },
+        },
+        SSID: ssid,
+      },
+    });
+
+    return ssid;
   }
 }

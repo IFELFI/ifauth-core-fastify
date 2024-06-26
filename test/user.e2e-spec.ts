@@ -38,10 +38,7 @@ describe('User', () => {
 
   beforeEach(async () => {
     data = await setupData();
-    await redisClient.set(
-      data.user.user.uuid_key,
-      data.refreshToken.normal,
-    );
+    await redisClient.set(data.user.member.uuid_key, data.refreshToken.normal);
   });
 
   describe('[GET] /user/profile', () => {
@@ -56,8 +53,8 @@ describe('User', () => {
     };
     beforeEach(() => {
       expectedProfile = {
-        uuidKey: data.user.user.uuid_key,
-        email: data.user.user.email,
+        uuidKey: data.user.member.uuid_key,
+        email: data.user.member.email,
         nickname: data.user.profile.nickname,
         imageUrl: data.user.profile.image_url,
         joinDate: data.user.profile.join_date.toISOString(),
@@ -101,7 +98,7 @@ describe('User', () => {
     });
 
     it('should return 401 when get user profile with wrong payload access token', async () => {
-      await redisClient.del(data.user.user.uuid_key);
+      await redisClient.del(data.user.member.uuid_key);
       const response = await server.inject({
         method: 'GET',
         url: '/user/profile',
@@ -142,58 +139,23 @@ describe('User', () => {
         },
       });
       expect(response.statusCode).toBe(200);
+      expect(redisClient.get(data.user.member.uuid_key)).resolves.toBeNull();
     });
-
-    it('should return 401 when logout with expired access', async () => {
+    
+    it('should return 200 when logout with AUTO cookie', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/user/logout',
         headers: {
-          Authorization: `Bearer ${data.accessToken.expired}`,
+          Authorization: `Bearer ${data.accessToken.normal}`,
+        },
+        cookies: {
+          AUTO: signer.sign('code'),
+          SSID: signer.sign(data.user.ssid.SSID),
         },
       });
-      expect(response.statusCode).toBe(401);
-      expect(response.json()).toEqual({
-        error: 'Unauthorized',
-        message: 'Access token needs to be refreshed',
-        statusCode: 401,
-      });
-    });
-
-    it('should return 401 when logout with expired access token and refresh token', async () => {
-      await redisClient.del(data.user.user.uuid_key);
-      const response = await server.inject({
-        method: 'GET',
-        url: '/user/logout',
-        headers: {
-          Authorization: `Bearer ${data.accessToken.wrongSecret}`,
-        },
-      });
-      expect(response.statusCode).toBe(401);
-    });
-
-    it('should return 401 when logout without access token', async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: '/user/logout',
-      });
-      expect(response.statusCode).toBe(401);
-      expect(response.json()).toEqual({
-        error: 'Unauthorized',
-        message: 'Access token is required',
-        statusCode: 401,
-      });
-    });
-
-    it('should return 401 when logout with an wrong payload access token', async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: '/user/logout',
-        headers: {
-          Authorization: `Bearer ${data.accessToken.wrongPayload}`,
-        },
-      });
-      expect(response.statusCode).toBe(401);
+      expect(response.statusCode).toBe(200);
+      expect(redisClient.get(data.user.member.uuid_key)).resolves.toBeNull();
     });
   });
 

@@ -39,16 +39,34 @@ export default async function (fastify: FastifyTypebox) {
       const userId = await fastify.services.authLocalService.login(
         request.body,
       );
-      const code = 
+      const code =
         await fastify.services.tokenService.issueAuthorizationCode(userId);
 
-      const replyData: AuthReplyData = {
+      let replyData: AuthReplyData = {
         message: 'User logged in',
         code: code,
       };
-      reply
-        .code(200)
-        .send(replyData);
+      if (request.body.auto) {
+        const autoAuthCode =
+          await fastify.services.autoLoginService.issueAuthorizationCode(
+            userId,
+          );
+        replyData.autoAuthCode = autoAuthCode;
+      }
+
+      const SSID = fastify.services.userService.parseSSID(request);
+      const verifySSID = await fastify.services.userService.verifySSID(
+        userId,
+        SSID,
+      );
+      if (!verifySSID) {
+        const newSSID = await fastify.services.userService.issueSSID(userId);
+        reply.setCookie('SSID', newSSID, {
+          expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        });
+      }
+
+      reply.code(200).send(replyData);
     },
   );
 }

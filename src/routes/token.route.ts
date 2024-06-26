@@ -22,7 +22,9 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('refresh', refreshToken)
+        .setCookie('REF', refreshToken, {
+          expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+        })
         .header('Authorization', `Bearer ${accessToken}`)
         .send(replyData);
     },
@@ -55,7 +57,7 @@ export default async function (fastify: FastifyTypebox) {
 
   fastify.get(`${basePath}/refresh`, async (request, reply) => {
     let { accessToken, refreshToken } =
-      await fastify.services.tokenService.parseTokenPair(request);
+      fastify.services.tokenService.parseTokenPair(request);
 
     const { valid, payload } = await fastify.services.tokenService.verify({
       accessToken,
@@ -71,7 +73,9 @@ export default async function (fastify: FastifyTypebox) {
 
       reply
         .code(200)
-        .setCookie('refresh', newRefreshToken)
+        .setCookie('REF', newRefreshToken, {
+          expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+        })
         .header('Authorization', `Bearer ${newAccessToken}`)
         .send(replyData);
     }
@@ -82,7 +86,9 @@ export default async function (fastify: FastifyTypebox) {
 
     reply
       .code(200)
-      .setCookie('refresh', refreshToken)
+      .setCookie('REF', refreshToken, {
+        expires: new Date(Date.now() + fastify.config.REFRESH_TOKEN_EXPIRATION * 1000),
+      })
       .header('Authorization', `Bearer ${accessToken}`)
       .send(replyData);
   });
