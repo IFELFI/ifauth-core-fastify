@@ -5,7 +5,7 @@ import { AccessTokenPayloadData } from '../interfaces/token.interface';
 import { FastifyInstance } from 'fastify';
 import { TokenService } from './token.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
-import { profile, users } from '@prisma/client';
+import { profile, member } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { httpErrors } from '@fastify/sensible';
 
@@ -14,7 +14,7 @@ describe('TokenService', () => {
   let fastify: DeepMockProxy<FastifyInstance>;
 
   // setup basic data for testing
-  const user: users = {
+  const user: member = {
     id: 1,
     email: 'test@ifelfi.com',
     uuid_key: uuidv4(),
@@ -87,12 +87,13 @@ describe('TokenService', () => {
       PORT: 3000,
       ACCESS_TOKEN_EXPIRATION: 60 * 5,
       REFRESH_TOKEN_EXPIRATION: 60 * 60 * 24 * 3,
+      AUTH_CODE_EXPIRATION: 60 * 3,
+      AUTO_LOGIN_CODE_EXPIRATION: 60 * 60 * 24 * 7,
       DATABASE_URL: 'postgres://localhost:5432',
       REDIS_URL: 'redis://localhost:6379',
       TOKEN_SECRET: 'secret',
       COOKIE_SECRET: 'secret',
       SALT: 'salt',
-      AUTH_CODE_EXPIRATION: 60 * 3,
       ISSUER: 'ifelfi.com',
     };
 
@@ -174,7 +175,7 @@ describe('TokenService', () => {
 
   describe('issueTokenPairByUserId', () => {
     it('should return token pair', async () => {
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(user);
       jest
         .spyOn(fastify.prisma.profile, 'findUnique')
         .mockResolvedValue(profile);
@@ -186,14 +187,14 @@ describe('TokenService', () => {
     });
 
     it('should throw internal server error when user not found', async () => {
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(null);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(null);
       await expect(service.issueTokenPairByUserId(user.id)).rejects.toThrow(
         'User not found',
       );
     });
 
     it('should throw internal server error when profile not found', async () => {
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(user);
       jest.spyOn(fastify.prisma.profile, 'findUnique').mockResolvedValue(null);
       await expect(service.issueTokenPairByUserId(user.id)).rejects.toThrow(
         'User not found',
@@ -205,7 +206,7 @@ describe('TokenService', () => {
     it('should return token pair', async () => {
       jest.spyOn(fastify.redis, 'get').mockResolvedValue(user.id.toString());
       jest.spyOn(fastify.redis, 'del').mockResolvedValue(1);
-      jest.spyOn(fastify.prisma.users, 'findUnique').mockResolvedValue(user);
+      jest.spyOn(fastify.prisma.member, 'findUnique').mockResolvedValue(user);
       jest
         .spyOn(fastify.prisma.profile, 'findUnique')
         .mockResolvedValue(profile);

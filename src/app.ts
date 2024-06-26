@@ -22,8 +22,7 @@ import loadServicesPlugin from './plugins/loadServices.plugin';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
-import jwt from './plugins/jwt.plugin'
-import underPressure from '@fastify/under-pressure';
+import jwt from './plugins/jwt.plugin';
 // Import schema
 import envSchema from './schema/env.schema';
 import typiaPlugin from './plugins/typia.plugin';
@@ -63,15 +62,14 @@ async function build(opts: {}, data: any = process.env) {
     schema: envSchema,
     data: data,
   });
-  await app.register(prismaPlugin, {
-    datasourceUrl: app.config.DATABASE_URL,
+  await app.register(cors, {
+    origin: ['http://localhost:5173', 'https://ifelfi.com', 'https://www.ifelfi.com'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Authorization'],
   });
-  await app.register(redis, {
-    url: app.config.REDIS_URL,
-  });
-  await app.register(sensible);
-  await app.register(loadServicesPlugin);
-  await app.register(typiaPlugin);
+  await app.register(helmet, { global: true });
   await app.register(cookie, {
     secret: app.config.COOKIE_SECRET,
     parseOptions: {
@@ -80,8 +78,6 @@ async function build(opts: {}, data: any = process.env) {
       path: '/',
       secure: true,
       httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7,
-      expires: new Date(Date.now() + 60 * 60 * 24 * 7),
       signed: true,
     },
   } as FastifyCookieOptions);
@@ -97,14 +93,15 @@ async function build(opts: {}, data: any = process.env) {
       complete: false,
     },
   });
-  await app.register(helmet, { global: true });
-  await app.register(cors, {
-    origin: ['http://localhost:5173'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Authorization'],
+  await app.register(prismaPlugin, {
+    datasourceUrl: app.config.DATABASE_URL,
   });
+  await app.register(redis, {
+    url: app.config.REDIS_URL,
+  });
+  await app.register(sensible);
+  await app.register(loadServicesPlugin);
+  await app.register(typiaPlugin);
 
   // Register routes
   registerRoutes(app);

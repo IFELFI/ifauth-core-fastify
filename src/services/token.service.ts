@@ -65,7 +65,7 @@ export class TokenService {
    * @returns Token pair
    */
   public async issueTokenPairByUserId(id: number): Promise<TokenPair> {
-    const searchUser = await this.#fastify.prisma.users.findUnique({
+    const searchUser = await this.#fastify.prisma.member.findUnique({
       where: { id },
     });
     const profile = await this.#fastify.prisma.profile.findUnique({
@@ -253,10 +253,10 @@ export class TokenService {
    * @param request Fastify request
    * @returns Token pair
    */
-  public async parseTokenPair(request: FastifyRequest): Promise<TokenPair> {
+  public parseTokenPair(request: FastifyRequest): TokenPair {
     const accessToken = request.headers.authorization?.split(' ')[1];
     const unsignedRefreshCookie = request.unsignCookie(
-      request.cookies.refresh ?? '',
+      request.cookies.REF ?? '',
     );
     const refreshToken = unsignedRefreshCookie.value;
 

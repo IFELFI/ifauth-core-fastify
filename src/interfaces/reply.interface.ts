@@ -5,4 +5,5 @@ export interface ReplyData {
 
 export interface AuthReplyData extends ReplyData {
   code: string;
+  autoAuthCode?: string;
 }
